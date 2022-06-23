@@ -3,10 +3,14 @@
 pragma solidity >=0.8.7 <0.9.0;
 
 import '@openzeppelin/contracts/interfaces/IERC4626.sol';
+import '@openzeppelin/contracts/interfaces/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '../../interfaces/ITransformer.sol';
 
 /// @title An implementaton of `ITransformer` for tokens that implement `ERC4626`
 contract ERC4626Transformer is ITransformer {
+  using SafeERC20 for IERC20;
+
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {
     return _toUnderlying(IERC4626(_dependent).asset());
@@ -44,7 +48,14 @@ contract ERC4626Transformer is ITransformer {
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
     address _recipient
-  ) external returns (uint256 _amountDependent) {}
+  ) external returns (uint256 _amountDependent) {
+    IERC20 _underlyingToken = IERC20(_underlying[0].underlying);
+    uint256 _underlyingAmount = _underlying[0].amount;
+    // We need to take the tokens from the sender, and approve them so that the vault can take it from us
+    _underlyingToken.safeTransferFrom(msg.sender, address(this), _underlyingAmount);
+    _underlyingToken.approve(_dependent, _underlyingAmount);
+    _amountDependent = IERC4626(_dependent).deposit(_underlyingAmount, _recipient);
+  }
 
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

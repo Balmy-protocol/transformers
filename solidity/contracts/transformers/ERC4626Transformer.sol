@@ -33,7 +33,11 @@ contract ERC4626Transformer is ITransformer {
     address _dependent,
     uint256 _amountDependent,
     address _recipient
-  ) external returns (UnderlyingAmount[] memory) {}
+  ) external returns (UnderlyingAmount[] memory) {
+    address _underlying = IERC4626(_dependent).asset();
+    uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
+    return _toUnderylingAmount(_underlying, _amount);
+  }
 
   /// @inheritdoc ITransformer
   function transformToDependent(

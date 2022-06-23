@@ -4,13 +4,13 @@
 [![Tests (unit, integration, e2e)](https://github.com/Mean-Finance/mean-transformers/actions/workflows/tests.yml/badge.svg)](https://github.com/Mean-Finance/mean-transformers/actions/workflows/tests.yml)
 [![npm version](https://img.shields.io/npm/v/@mean-finance/mean-transformers/latest.svg)](https://www.npmjs.com/package/@mean-finance/mean-transformers/v/latest)
 
-With this repository, we are now defining the concept of **dependent tokens**. These are tokens that depend on one or more underlying tokens, they can't exist on their own. This concept can apply to some know type of tokens, such as:
+With this repository, we are now defining the concept of **dependent tokens**. These are tokens that depend on one or more underlying tokens, they can't exist on their own. This concept can apply to some known types of tokens, such as:
 
 - Wrappers (WETH/WMATIC/WBNB)
 - ERC-4626 tokens
 - LP tokens
 
-In this repository, we will build our `Transformers`. These are smart contract that know how to map dependent tokens into their underlying counterparts, and vice-versa. We are doing this so that we can abstract the way tokens can be transformed between each other.
+In this repository, we will build our `Transformers`. These are smart contract that knows how to map dependent tokens into their underlying counterparts, and vice-versa. We are doing this so that we can abstract the way tokens can be transformed between each other.
 
 Finally, this repository also contains Mean's "transformers registry". All _transformers_ will be registered to this contract, so that all clients can interact with the registry directly, without having to know all existing _transformers_.
 

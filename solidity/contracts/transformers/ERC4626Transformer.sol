@@ -13,7 +13,11 @@ contract ERC4626Transformer is ITransformer {
   }
 
   /// @inheritdoc ITransformer
-  function calculateTransformToUnderlying(address _dependent, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {}
+  function calculateTransformToUnderlying(address _dependent, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {
+    address _underlying = IERC4626(_dependent).asset();
+    uint256 _amount = IERC4626(_dependent).previewRedeem(_amountDependent);
+    return _toUnderylingAmount(_underlying, _amount);
+  }
 
   /// @inheritdoc ITransformer
   function calculateTransformToDependent(address _dependent, UnderlyingAmount[] calldata _underlying)
@@ -39,5 +43,10 @@ contract ERC4626Transformer is ITransformer {
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);
     _underlyingArray[0] = _underlying;
+  }
+
+  function _toUnderylingAmount(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
+    _amounts = new UnderlyingAmount[](1);
+    _amounts[0] = UnderlyingAmount({underlying: _underlying, amount: _amount});
   }
 }

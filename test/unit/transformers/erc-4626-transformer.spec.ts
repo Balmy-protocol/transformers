@@ -5,6 +5,7 @@ import { ERC4626Transformer, ERC4626Transformer__factory, IERC4626, ITransformer
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { BigNumber } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 chai.use(smock.matchers);
 
@@ -13,11 +14,13 @@ describe('ERC4626Transformer', () => {
   const AMOUNT_DEPENDENT = 100000;
   const AMOUNT_UNDERLYING = 12345678;
 
+  let signer: SignerWithAddress, recipient: SignerWithAddress;
   let transformer: ERC4626Transformer;
   let vault: FakeContract<IERC4626>;
   let snapshotId: string;
 
   before('Setup accounts and contracts', async () => {
+    [signer, recipient] = await ethers.getSigners();
     vault = await smock.fake('IERC4626');
     vault.asset.returns(UNDERLYING);
     const adapterFactory: ERC4626Transformer__factory = await ethers.getContractFactory(
@@ -31,6 +34,7 @@ describe('ERC4626Transformer', () => {
     await snapshot.revert(snapshotId);
     vault.previewRedeem.reset();
     vault.previewDeposit.reset();
+    vault.redeem.reset();
   });
 
   describe('getUnderlying', () => {
@@ -52,7 +56,7 @@ describe('ERC4626Transformer', () => {
       then('vault is called correctly', () => {
         expect(vault.previewRedeem).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
       });
-      then('undelying amount is returned correctly', async () => {
+      then('underlying amount is returned correctly', async () => {
         expect(underlying.length).to.equal(1);
         expect(underlying[0].amount).to.equal(AMOUNT_UNDERLYING);
         expect(underlying[0].underlying).to.equal(UNDERLYING);
@@ -74,6 +78,24 @@ describe('ERC4626Transformer', () => {
       });
       then('dependent amount is returned correctly', async () => {
         expect(amountDependent).to.equal(AMOUNT_DEPENDENT);
+      });
+    });
+  });
+
+  describe('transformToUnderlying', () => {
+    when('function is called', () => {
+      given(async () => {
+        vault.redeem.returns(AMOUNT_UNDERLYING);
+        await transformer.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address);
+      });
+      then('vault is called correctly', () => {
+        expect(vault.redeem).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address, signer.address);
+      });
+      then('underlying amount is returned correctly', async () => {
+        const underlying = await transformer.callStatic.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        expect(underlying.length).to.equal(1);
+        expect(underlying[0].amount).to.equal(AMOUNT_UNDERLYING);
+        expect(underlying[0].underlying).to.equal(UNDERLYING);
       });
     });
   });

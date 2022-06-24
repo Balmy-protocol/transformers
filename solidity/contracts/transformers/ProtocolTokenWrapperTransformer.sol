@@ -19,10 +19,14 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
   }
 
   /// @inheritdoc ITransformer
-  function calculateTransformToUnderlying(address, uint256 _amountDependent) external pure returns (UnderlyingAmount[] memory) {}
+  function calculateTransformToUnderlying(address, uint256 _amountDependent) external pure returns (UnderlyingAmount[] memory) {
+    return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
+  }
 
   /// @inheritdoc ITransformer
-  function calculateTransformToDependent(address, UnderlyingAmount[] calldata _underlying) external pure returns (uint256 _amountDependent) {}
+  function calculateTransformToDependent(address, UnderlyingAmount[] calldata _underlying) external pure returns (uint256 _amountDependent) {
+    _amountDependent = _underlying[0].amount;
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(
@@ -41,6 +45,11 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);
     _underlyingArray[0] = _underlying;
+  }
+
+  function _toUnderylingAmount(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
+    _amounts = new UnderlyingAmount[](1);
+    _amounts[0] = UnderlyingAmount({underlying: _underlying, amount: _amount});
   }
 }
 

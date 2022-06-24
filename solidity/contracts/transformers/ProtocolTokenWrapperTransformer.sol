@@ -33,7 +33,11 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
     address _dependent,
     uint256 _amountDependent,
     address payable _recipient
-  ) external returns (UnderlyingAmount[] memory) {}
+  ) external returns (UnderlyingAmount[] memory) {
+    IWETH9(_dependent).withdraw(_amountDependent);
+    _recipient.transfer(_amountDependent);
+    return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
+  }
 
   /// @inheritdoc ITransformer
   function transformToDependent(

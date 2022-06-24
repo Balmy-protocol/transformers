@@ -54,7 +54,7 @@ interface ITransformer {
   function transformToUnderlying(
     address dependent,
     uint256 amountDependent,
-    address recipient
+    address payable recipient
   ) external returns (UnderlyingAmount[] memory);
 
   /**
@@ -68,5 +68,5 @@ interface ITransformer {
     address dependent,
     UnderlyingAmount[] calldata underlying,
     address recipient
-  ) external returns (uint256 amountDependent);
+  ) external payable returns (uint256 amountDependent);
 }

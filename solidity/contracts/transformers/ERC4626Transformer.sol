@@ -36,7 +36,7 @@ contract ERC4626Transformer is ITransformer {
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
-    address _recipient
+    address payable _recipient
   ) external returns (UnderlyingAmount[] memory) {
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
@@ -48,7 +48,7 @@ contract ERC4626Transformer is ITransformer {
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
     address _recipient
-  ) external returns (uint256 _amountDependent) {
+  ) external payable returns (uint256 _amountDependent) {
     IERC20 _underlyingToken = IERC20(_underlying[0].underlying);
     uint256 _underlyingAmount = _underlying[0].amount;
     // We need to take the tokens from the sender, and approve them so that the vault can take it from us

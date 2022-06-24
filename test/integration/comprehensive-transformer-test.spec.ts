@@ -79,7 +79,7 @@ describe('Comprehensive Transformer Test', () => {
       });
       describe('getUnderlying', () => {
         when('asked for the underlying tokens', () => {
-          then('the correct addressed are returned', async () => {
+          then('the correct addresses are returned', async () => {
             const underlyingTokens = await transformer.getUnderlying(dependent.address);
             expect(underlyingTokens.length).to.equal(underlying.length);
             for (const underlyingToken of underlyingTokens) {

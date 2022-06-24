@@ -6,6 +6,7 @@ import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 chai.use(smock.matchers);
 
@@ -14,11 +15,13 @@ describe('ProtocolTokenWrapperTransformer', () => {
   const AMOUNT_TO_MAP = 100000;
   const RECIPIENT = '0x000000000000000000000000000000000000000F';
 
+  let signer: SignerWithAddress;
   let transformer: ProtocolTokenWrapperTransformer;
   let wToken: FakeContract<IWETH9>;
   let snapshotId: string;
 
   before('Setup accounts and contracts', async () => {
+    [signer] = await ethers.getSigners();
     wToken = await smock.fake('IWETH9');
     const adapterFactory: ProtocolTokenWrapperTransformer__factory = await ethers.getContractFactory(
       'solidity/contracts/transformers/ProtocolTokenWrapperTransformer.sol:ProtocolTokenWrapperTransformer'
@@ -32,6 +35,9 @@ describe('ProtocolTokenWrapperTransformer', () => {
     wToken.withdraw.reset();
     wToken.deposit.reset();
     wToken.transfer.reset();
+    wToken.transferFrom.reset();
+    wToken.transfer.returns(true);
+    wToken.transferFrom.returns(true);
   });
 
   describe('constructor', () => {
@@ -85,6 +91,9 @@ describe('ProtocolTokenWrapperTransformer', () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         setBalance(transformer.address, AMOUNT_TO_MAP);
         await transformer.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT);
+      });
+      then('wToken is taken from caller', () => {
+        expect(wToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_TO_MAP);
       });
       then('wToken is called correctly', () => {
         expect(wToken.withdraw).to.have.been.calledOnceWith(AMOUNT_TO_MAP);

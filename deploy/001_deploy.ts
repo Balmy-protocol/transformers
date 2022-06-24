@@ -1,27 +1,11 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getChainId, shouldVerifyContract } from '../utils/deploy';
-import { deploy, getCreationCode } from '@utils/contracts';
+import { getChainId } from '../utils/deploy';
+import { getCreationCode } from '@utils/contracts';
 import { ethers } from 'hardhat';
 import { utils } from 'ethers';
-import { StaticOracle__factory } from '@typechained';
+import { ERC4626Transformer__factory } from '@typechained';
 import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
-
-const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
-
-export const CARDINALITY_PER_MINUTE: { [chainId: string]: number } = {
-  '1': 4, // Ethereum: Blocks every ~15s
-  '3': 1, // Ethereum Ropsten: Blocks every ~60s
-  '4': 4, // Ethereum Rinkeby: Blocks every ~15s
-  '5': 4, // Ethereum Goerli: Blocks every ~15s
-  '42': 13, // Ethereum Kovan: Blocks every ~4s
-  '10': 60, // Optimism: Blocks every ~1s
-  '69': 60, // Optimism Kovan: Blocks every ~12
-  '42161': 60, // Arbitrum: Blocks every ~1s
-  '421611': 60, // Arbitrum Rinkeby: Blocks every ~1s
-  '137': 30, // Polygon: Blocks every ~2s
-  '80001': 12, // Polygon Mumbai: Blocks every ~5s
-};
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
@@ -33,15 +17,13 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     '0xbb681d77506df5CA21D2214ab3923b4C056aa3e2'
   );
 
-  const SALT = utils.formatBytes32String('MF-UniswapV3-StaticOracle-V1');
-
-  const args = [UNISWAP_V3_FACTORY_ADDRESS, CARDINALITY_PER_MINUTE[chainId]];
+  const SALT = utils.formatBytes32String('MF-ERC4626-Transformer-V1');
 
   const creationCode = getCreationCode({
-    bytecode: StaticOracle__factory.bytecode,
+    bytecode: ERC4626Transformer__factory.bytecode,
     constructorArgs: {
-      types: ['address', 'uint8'],
-      values: args,
+      types: [],
+      values: [],
     },
   });
 
@@ -54,19 +36,19 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const receipt = await deploymentTx.wait();
 
   const deployment = await hre.deployments.buildDeploymentSubmission({
-    name: 'StaticOracle',
+    name: 'ERC4626Transformer',
     contractAddress: await deterministicFactory.getDeployed(SALT),
     options: {
-      contract: 'solidity/contracts/StaticOracle.sol:StaticOracle',
+      contract: 'solidity/contracts/transformers/ERC4626Transformer.sol:ERC4626Transformer',
       from: deployer,
-      args,
+      args: [],
     },
     receipt,
   });
 
-  await hre.deployments.save('StaticOracle', deployment);
+  await hre.deployments.save('ERC4626Transformer', deployment);
 };
 
 deployFunction.dependencies = [];
-deployFunction.tags = ['StaticOracle'];
+deployFunction.tags = ['ERC4626Transformer'];
 export default deployFunction;

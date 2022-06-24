@@ -44,7 +44,11 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
     address _recipient
-  ) external payable returns (uint256 _amountDependent) {}
+  ) external payable returns (uint256 _amountDependent) {
+    _amountDependent = _underlying[0].amount;
+    IWETH9(_dependent).deposit{value: _amountDependent}();
+    IWETH9(_dependent).transfer(_recipient, _amountDependent);
+  }
 
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

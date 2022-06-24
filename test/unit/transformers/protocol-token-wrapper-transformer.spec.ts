@@ -5,6 +5,7 @@ import { ProtocolTokenWrapperTransformer, ProtocolTokenWrapperTransformer__facto
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { BigNumber, BigNumberish, utils } from 'ethers';
+import { TransactionResponse } from '@ethersproject/abstract-provider';
 
 chai.use(smock.matchers);
 
@@ -29,6 +30,8 @@ describe('ProtocolTokenWrapperTransformer', () => {
   beforeEach(async () => {
     await snapshot.revert(snapshotId);
     wToken.withdraw.reset();
+    wToken.deposit.reset();
+    wToken.transfer.reset();
   });
 
   describe('constructor', () => {
@@ -104,6 +107,51 @@ describe('ProtocolTokenWrapperTransformer', () => {
       });
     });
   });
+
+  describe('transformToDependent', () => {
+    when('sending less in value than specified as parameter', () => {
+      let tx: Promise<TransactionResponse>;
+      given(() => {
+        tx = transformer.transformToDependent(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, {
+          value: AMOUNT_TO_MAP - 1,
+        });
+      });
+      then('tx reverts', async () => {
+        await expect(tx).to.have.reverted;
+      });
+    });
+    when('function is called correctly', () => {
+      given(async () => {
+        await transformer.transformToDependent(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, {
+          value: AMOUNT_TO_MAP,
+        });
+      });
+      then('protocol token has been sent to wToken', async () => {
+        const balance = await ethers.provider.getBalance(wToken.address);
+        expect(balance).to.equal(AMOUNT_TO_MAP);
+      });
+      then('transformer has no protocol token', async () => {
+        const balance = await ethers.provider.getBalance(transformer.address);
+        expect(balance).to.equal(0);
+      });
+      then('wToken is called correctly', () => {
+        expect(wToken.deposit).to.have.been.calledOnce;
+      });
+      then('dependent token is transferred to recipient', () => {
+        expect(wToken.transfer).to.have.been.calledOnceWith(RECIPIENT, AMOUNT_TO_MAP);
+      });
+      then('dependent amount is returned correctly', async () => {
+        const amountDependent = await transformer.callStatic.transformToDependent(
+          wToken.address,
+          [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }],
+          RECIPIENT,
+          { value: AMOUNT_TO_MAP }
+        );
+        expect(amountDependent).to.equal(AMOUNT_TO_MAP);
+      });
+    });
+  });
+
   async function setBalance(address: string, amount: BigNumberish) {
     const amountToSwapHex = utils.hexStripZeros(BigNumber.from(amount).toHexString());
     await ethers.provider.send('hardhat_setBalance', [address, amountToSwapHex]);

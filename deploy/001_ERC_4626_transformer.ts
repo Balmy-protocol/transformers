@@ -1,5 +1,4 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { getChainId } from '../utils/deploy';
 import { getCreationCode } from '@utils/contracts';
 import { ethers } from 'hardhat';
 import { utils } from 'ethers';
@@ -9,8 +8,6 @@ import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
-
-  const chainId = await getChainId(hre);
 
   const deterministicFactory = await ethers.getContractAt<DeterministicFactory>(
     DeterministicFactory__factory.abi,

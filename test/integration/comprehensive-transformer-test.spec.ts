@@ -5,14 +5,17 @@ import { expect } from 'chai';
 import { getNodeUrl } from 'utils/env';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IERC20, ITransformer } from '@typechained';
-import { BigNumber, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
 import { snapshot } from '@utils/evm';
 import { setTestChainId } from 'utils/deploy';
+import { JsonRpcSigner } from '@ethersproject/providers';
 
 const CHAIN = { chain: 'ethereum', chainId: 1 };
 const BLOCK_NUMBER = 15014793;
+
+const PROTOCOL_TOKEN = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 const TOKENS = {
   'cvxCRVCRV Vault': {
@@ -23,13 +26,20 @@ const TOKENS = {
     address: '0x9d0464996170c6b9e75eed71c68b99ddedf279e8',
     whale: '0x903da6213a5a12b61c821598154efad98c3b20e4',
   },
+  WETH: {
+    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    whale: '0x030ba81f1c18d280636f32af80b9aad02cf0854e',
+  },
+  ETH: {
+    address: PROTOCOL_TOKEN,
+  },
 };
 
 describe('Comprehensive Transformer Test', () => {
-  let deployer: SignerWithAddress, signer: SignerWithAddress, recipient: SignerWithAddress;
+  let deployer: SignerWithAddress, signer: SignerWithAddress;
 
   before(async () => {
-    [deployer, signer, recipient] = await ethers.getSigners();
+    [deployer, signer] = await ethers.getSigners();
     await fork({ ...CHAIN, blockNumber: BLOCK_NUMBER });
   });
 
@@ -37,6 +47,12 @@ describe('Comprehensive Transformer Test', () => {
     transformer: 'ERC4626Transformer',
     dependent: 'cvxCRVCRV Vault',
     underlying: ['cvxCRVCRV'],
+  });
+
+  transformerComprehensiveTest({
+    transformer: 'ProtocolTokenWrapperTransformer',
+    dependent: 'WETH',
+    underlying: ['ETH'],
   });
 
   function transformerComprehensiveTest({
@@ -51,8 +67,9 @@ describe('Comprehensive Transformer Test', () => {
     underlying: (keyof typeof TOKENS)[];
   }) {
     contract(title ?? transformerName, () => {
-      const INITIAL_SIGNER_BALANCE = utils.parseEther('1');
-      let dependent: IERC20, underlying: IERC20[];
+      const INITIAL_SIGNER_BALANCE = utils.parseEther('10');
+      const RECIPIENT = '0x00000000000000000000000000000000000000FF';
+      let dependent: IERC20Like, underlying: IERC20Like[];
       let transformer: ITransformer;
       let snapshotId: string;
       before(async () => {
@@ -61,12 +78,17 @@ describe('Comprehensive Transformer Test', () => {
         transformer = await ethers.getContract<ITransformer>(transformerName);
 
         // Sent tokens from whales to signer
-        const tokens: IERC20[] = [];
+        const tokens: IERC20Like[] = [];
         for (const tokenId of [dependentId, ...underlyingIds]) {
-          const token = await ethers.getContractAt<IERC20>(IERC20_ABI, TOKENS[tokenId].address);
-          const whale = await wallet.impersonate(TOKENS[tokenId].whale);
-          await ethers.provider.send('hardhat_setBalance', [whale._address, '0xffffffffffffffff']);
-          await token.connect(whale).transfer(signer.address, INITIAL_SIGNER_BALANCE);
+          const tokenData = TOKENS[tokenId];
+          const token = await wrap(tokenData.address);
+          if ('whale' in tokenData) {
+            const whale = await wallet.impersonate(tokenData.whale);
+            await ethers.provider.send('hardhat_setBalance', [whale._address, '0xffffffffffffffff']);
+            await token.connect(whale).transfer(signer.address, INITIAL_SIGNER_BALANCE);
+          } else {
+            await ethers.provider.send('hardhat_setBalance', [signer.address, utils.hexStripZeros(INITIAL_SIGNER_BALANCE.toHexString())]);
+          }
           tokens.push(token);
         }
         [dependent, ...underlying] = tokens;
@@ -133,7 +155,7 @@ describe('Comprehensive Transformer Test', () => {
           given(async () => {
             await dependent.connect(signer).approve(transformer.address, AMOUNT_DEPENDENT);
             expectedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, AMOUNT_DEPENDENT);
-            await transformer.connect(signer).transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, recipient.address);
+            await transformer.connect(signer).transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, RECIPIENT);
           });
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
@@ -144,8 +166,8 @@ describe('Comprehensive Transformer Test', () => {
           });
           then('underlying tokens are sent to the recipient', async () => {
             for (const { underlying, amount } of expectedUnderlying) {
-              const token = await ethers.getContractAt<IERC20>(IERC20_ABI, underlying);
-              const recipientBalance = await token.balanceOf(recipient.address);
+              const token = await wrap(underlying);
+              const recipientBalance = await token.balanceOf(RECIPIENT);
               expect(recipientBalance).to.equal(amount);
             }
           });
@@ -155,13 +177,17 @@ describe('Comprehensive Transformer Test', () => {
         const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
         when('transforming to dependent', () => {
           let expectedDependent: BigNumber;
+          let gasSpent: BigNumber;
           given(async () => {
             const input = underlying.map((token) => ({ underlying: token.address, amount: AMOUNT_PER_UNDERLYING }));
+            const value = isTokenUnderyling(PROTOCOL_TOKEN) ? AMOUNT_PER_UNDERLYING : constants.Zero;
             for (const underlyingToken of underlying) {
               await underlyingToken.connect(signer).approve(transformer.address, AMOUNT_PER_UNDERLYING);
             }
             expectedDependent = await transformer.calculateTransformToDependent(dependent.address, input);
-            await transformer.connect(signer).transformToDependent(dependent.address, input, recipient.address);
+            const tx = await transformer.connect(signer).transformToDependent(dependent.address, input, RECIPIENT, { value });
+            const { gasUsed, effectiveGasPrice } = await tx.wait();
+            gasSpent = gasUsed.mul(effectiveGasPrice);
           });
           then('allowance is spent for all underlying tokens', async () => {
             for (const underlyingToken of underlying) {
@@ -171,11 +197,15 @@ describe('Comprehensive Transformer Test', () => {
           then('underlying tokens are transferred', async () => {
             for (const underlyingToken of underlying) {
               const balance = await underlyingToken.balanceOf(signer.address);
-              expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING));
+              if (underlyingToken.address === PROTOCOL_TOKEN) {
+                expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING).sub(gasSpent));
+              } else {
+                expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING));
+              }
             }
           });
           then('dependent tokens are sent to the recipient', async () => {
-            const recipientBalance = await dependent.balanceOf(recipient.address);
+            const recipientBalance = await dependent.balanceOf(RECIPIENT);
             expect(recipientBalance).to.equal(expectedDependent);
           });
         });
@@ -186,6 +216,31 @@ describe('Comprehensive Transformer Test', () => {
       }
     });
   }
+
+  async function wrap(token: string): Promise<IERC20Like> {
+    return token === PROTOCOL_TOKEN ? ethWrapper() : await ethers.getContractAt<IERC20>(IERC20_ABI, token);
+  }
+
+  function ethWrapper(): IERC20Like {
+    const wrapper: IERC20Like = {
+      address: TOKENS['ETH'].address,
+      balanceOf: (address) => ethers.provider.getBalance(address),
+      approve: () => Promise.resolve(),
+      allowance: () => Promise.resolve(constants.Zero),
+      transfer: () => Promise.resolve(),
+      connect: () => wrapper,
+    };
+    return wrapper;
+  }
+
+  type IERC20Like = {
+    balanceOf: (address: string) => Promise<BigNumber>;
+    approve: (address: string, amount: BigNumberish) => Promise<any>;
+    transfer: (address: string, amount: BigNumberish) => Promise<any>;
+    address: string;
+    allowance: (owner: string, spender: string) => Promise<BigNumber>;
+    connect: (signer: SignerWithAddress | JsonRpcSigner) => IERC20Like;
+  };
 
   const DETERMINISTIC_FACTORY_ADMIN = '0x1a00e1e311009e56e3b0b9ed6f86f5ce128a1c01';
   const DEPLOYER_ROLE = utils.keccak256(utils.toUtf8Bytes('DEPLOYER_ROLE'));

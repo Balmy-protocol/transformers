@@ -2,11 +2,14 @@
 
 pragma solidity >=0.8.7 <0.9.0;
 
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '../../interfaces/ITransformer.sol';
 
 /// @title An implementaton of `ITransformer` for protocol token wrappers (WETH/WBNB/WMATIC)
 contract ProtocolTokenWrapperTransformer is ITransformer {
+  using SafeERC20 for IERC20;
+
   /**
    * @notice Returns the address that will represent the protocol's token
    * @return The address that will represent the protocol's token
@@ -34,6 +37,7 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
     uint256 _amountDependent,
     address payable _recipient
   ) external returns (UnderlyingAmount[] memory) {
+    IERC20(_dependent).safeTransferFrom(msg.sender, address(this), _amountDependent);
     IWETH9(_dependent).withdraw(_amountDependent);
     _recipient.transfer(_amountDependent);
     return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
@@ -47,8 +51,10 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
   ) external payable returns (uint256 _amountDependent) {
     _amountDependent = _underlying[0].amount;
     IWETH9(_dependent).deposit{value: _amountDependent}();
-    IWETH9(_dependent).transfer(_recipient, _amountDependent);
+    IERC20(_dependent).safeTransfer(_recipient, _amountDependent);
   }
+
+  receive() external payable {}
 
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

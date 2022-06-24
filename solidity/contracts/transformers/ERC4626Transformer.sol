@@ -24,7 +24,9 @@ contract ERC4626Transformer is ITransformer {
     external
     view
     returns (uint256 _amountDependent)
-  {}
+  {
+    _amountDependent = IERC4626(_dependent).previewDeposit(_underlying[0].amount);
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(

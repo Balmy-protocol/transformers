@@ -5,11 +5,13 @@ pragma solidity >=0.8.7 <0.9.0;
 import '@openzeppelin/contracts/interfaces/IERC4626.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '../../interfaces/ITransformer.sol';
+import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for tokens that implement `ERC4626`
-contract ERC4626Transformer is ITransformer {
+contract ERC4626Transformer is BaseTransformer {
   using SafeERC20 for IERC20;
+
+  constructor(address _governor) Governable(_governor) {}
 
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {

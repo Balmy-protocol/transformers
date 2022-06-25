@@ -4,26 +4,22 @@ pragma solidity >=0.8.7 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
-import '../../interfaces/ITransformer.sol';
+import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for protocol token wrappers (WETH/WBNB/WMATIC)
-contract ProtocolTokenWrapperTransformer is ITransformer {
+contract ProtocolTokenWrapperTransformer is BaseTransformer {
   using SafeERC20 for IERC20;
 
-  /**
-   * @notice Returns the address that will represent the protocol's token
-   * @return The address that will represent the protocol's token
-   */
-  address public constant PROTOCOL_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  constructor(address _governor) Governable(_governor) {}
 
   /// @inheritdoc ITransformer
   function getUnderlying(address) external pure returns (address[] memory) {
-    return _toUnderlying(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    return _toUnderlying(PROTOCOL_TOKEN);
   }
 
   /// @inheritdoc ITransformer
   function calculateTransformToUnderlying(address, uint256 _amountDependent) external pure returns (UnderlyingAmount[] memory) {
-    return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
+    return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -40,7 +36,7 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
     IERC20(_dependent).safeTransferFrom(msg.sender, address(this), _amountDependent);
     IWETH9(_dependent).withdraw(_amountDependent);
     payable(_recipient).transfer(_amountDependent);
-    return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
+    return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
   }
 
   /// @inheritdoc ITransformer

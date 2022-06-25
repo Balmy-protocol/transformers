@@ -9,6 +9,12 @@ import './IGovernable.sol';
  *         by mistake
  */
 interface ICollectableDust is IGovernable {
+  /// @notice The balance of a given token
+  struct TokenBalance {
+    address token;
+    uint256 balance;
+  }
+
   /// @notice Thrown when trying to send dust to the zero address
   error DustRecipientIsZeroAddress();
 
@@ -26,6 +32,14 @@ interface ICollectableDust is IGovernable {
    * @return The address of the protocol token;
    */
   function PROTOCOL_TOKEN() external view returns (address);
+
+  /**
+   * @notice Returns the balance of each of the given tokens
+   * @dev Meant to be used for off-chain queries
+   * @param tokens The tokens to check the balance for, can be ERC20s or the protocol token
+   * @return The balances for the given tokens
+   */
+  function getBalances(address[] calldata tokens) external view returns (TokenBalance[] memory);
 
   /**
    * @notice Sends the given token to the recipient

@@ -14,6 +14,15 @@ abstract contract CollectableDust is Governable, ICollectableDust {
   address public constant PROTOCOL_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /// @inheritdoc ICollectableDust
+  function getBalances(address[] calldata _tokens) external view returns (TokenBalance[] memory _balances) {
+    _balances = new TokenBalance[](_tokens.length);
+    for (uint256 i; i < _tokens.length; i++) {
+      uint256 _balance = _tokens[i] == PROTOCOL_TOKEN ? address(this).balance : IERC20(_tokens[i]).balanceOf(address(this));
+      _balances[i] = TokenBalance({token: _tokens[i], balance: _balance});
+    }
+  }
+
+  /// @inheritdoc ICollectableDust
   function sendDust(
     address _token,
     uint256 _amount,

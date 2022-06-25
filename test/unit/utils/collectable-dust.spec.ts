@@ -6,6 +6,7 @@ import { given, then, when } from '../../utils/bdd';
 import { expect } from 'chai';
 import { snapshot } from '@utils/evm';
 import { CollectableDustMock, CollectableDustMock__factory, ERC20Mock } from '@typechained';
+import { ICollectableDust } from 'typechained/solidity/contracts/test/utils/CollectableDust.sol/CollectableDustMock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('CollectableDust', function () {
@@ -28,6 +29,44 @@ describe('CollectableDust', function () {
 
   beforeEach(async () => {
     await snapshot.revert(snapshotId);
+  });
+
+  describe('getBalances', () => {
+    const BALANCE = utils.parseEther('0.1');
+    when('querying for an ERC20', () => {
+      let balances: ICollectableDust.TokenBalanceStructOutput[];
+      given(async () => {
+        await token.mint(collectableDust.address, BALANCE);
+        balances = await collectableDust.getBalances([token.address]);
+      });
+      then('balances are returned correctly', async () => {
+        expect(balances.length).to.equal(1);
+        expect(balances[0].token).to.equal(token.address);
+        expect(balances[0].balance).to.equal(BALANCE);
+      });
+    });
+    when('querying for protocol token', () => {
+      let balances: ICollectableDust.TokenBalanceStructOutput[];
+      given(async () => {
+        const balanceHex = utils.hexStripZeros(BALANCE.toHexString());
+        await ethers.provider.send('hardhat_setBalance', [collectableDust.address, balanceHex]);
+        balances = await collectableDust.getBalances([await collectableDust.PROTOCOL_TOKEN()]);
+      });
+      then('balances are returned correctly', async () => {
+        expect(balances.length).to.equal(1);
+        expect(balances[0].token).to.equal(await collectableDust.PROTOCOL_TOKEN());
+        expect(balances[0].balance).to.equal(BALANCE);
+      });
+    });
+    when('querying for an invalid address', () => {
+      let tx: Promise<ICollectableDust.TokenBalanceStructOutput[]>;
+      given(() => {
+        tx = collectableDust.getBalances([constants.AddressZero]);
+      });
+      then('tx is reverted', async () => {
+        await expect(tx).to.have.reverted;
+      });
+    });
   });
 
   describe('sendDust', () => {

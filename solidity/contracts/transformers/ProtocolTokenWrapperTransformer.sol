@@ -35,11 +35,11 @@ contract ProtocolTokenWrapperTransformer is ITransformer {
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
-    address payable _recipient
+    address _recipient
   ) external returns (UnderlyingAmount[] memory) {
     IERC20(_dependent).safeTransferFrom(msg.sender, address(this), _amountDependent);
     IWETH9(_dependent).withdraw(_amountDependent);
-    _recipient.transfer(_amountDependent);
+    payable(_recipient).transfer(_amountDependent);
     return _toUnderylingAmount(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _amountDependent);
   }
 

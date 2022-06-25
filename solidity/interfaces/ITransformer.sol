@@ -54,7 +54,7 @@ interface ITransformer {
   function transformToUnderlying(
     address dependent,
     uint256 amountDependent,
-    address payable recipient
+    address recipient
   ) external returns (UnderlyingAmount[] memory);
 
   /**

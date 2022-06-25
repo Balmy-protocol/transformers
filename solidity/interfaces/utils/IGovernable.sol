@@ -3,11 +3,6 @@ pragma solidity >=0.8.7 <0.9.0;
 
 /**
  * @title A contract that manages a "governor" role
- * @notice This contract is meant to be used in other contracts. By using this contract,
- *         a specific address will be given a "governor" role, which basically will be able to
- *         control certains aspects of the contract. There are other contracts that do the same,
- *         but this contract forces a new governor to accept the role before it's transferred.
- *         This is a basically a safety measure to prevent losing access to the contract.
  */
 interface IGovernable {
   /// @notice Thrown when trying to set the zero address as governor

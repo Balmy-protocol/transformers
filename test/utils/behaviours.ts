@@ -6,6 +6,8 @@ import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { Provider } from '@ethersproject/providers';
 import { getStatic } from 'ethers/lib/utils';
 import { wallet } from '.';
+import { given, then, when } from './bdd';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 chai.use(chaiAsPromised);
 
@@ -200,4 +202,44 @@ export const fnShouldOnlyBeCallableByGovernance = (
     const fn = delayedContract().connect(impersonator)[fnName] as (...args: unknown[]) => unknown;
     return fn(...argsArray);
   }
+};
+
+export const shouldBeExecutableOnlyByGovernor = ({
+  contract,
+  funcAndSignature,
+  params,
+  governor,
+}: {
+  contract: () => Contract;
+  funcAndSignature: string;
+  params?: any[] | (() => any[]);
+  governor: () => SignerWithAddress | Wallet;
+}) => {
+  let realParams: any[];
+  given(() => {
+    realParams = typeof params === 'function' ? params() : params ?? [];
+  });
+  when('not called from governor', () => {
+    let onlyGovernorAllowedTx: Promise<TransactionResponse>;
+    given(async () => {
+      const notGovernor = await wallet.generateRandom();
+      onlyGovernorAllowedTx = contract()
+        .connect(notGovernor)
+        [funcAndSignature](...realParams!);
+    });
+    then('tx is reverted with reason', async () => {
+      await expect(onlyGovernorAllowedTx).to.be.revertedWith('OnlyGovernor');
+    });
+  });
+  when('called from governor', () => {
+    let onlyGovernorAllowedTx: Promise<TransactionResponse>;
+    given(async () => {
+      onlyGovernorAllowedTx = contract()
+        .connect(governor())
+        [funcAndSignature](...realParams!);
+    });
+    then('tx is not reverted or not reverted with reason only governor', async () => {
+      await expect(onlyGovernorAllowedTx).to.not.be.revertedWith('OnlyGovernor');
+    });
+  });
 };

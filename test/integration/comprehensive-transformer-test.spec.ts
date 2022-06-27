@@ -4,13 +4,24 @@ import { contract, given, then, when } from '@utils/bdd';
 import { expect } from 'chai';
 import { getNodeUrl } from 'utils/env';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { IERC20, ITransformer } from '@typechained';
+import {
+  IERC20,
+  BaseTransformer,
+  ITransformer,
+  ITransformer__factory,
+  IERC20__factory,
+  IERC165__factory,
+  ICollectableDust__factory,
+  IMulticall__factory,
+  IGovernable__factory,
+} from '@typechained';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
 import { snapshot } from '@utils/evm';
 import { setTestChainId } from 'utils/deploy';
 import { JsonRpcSigner } from '@ethersproject/providers';
+const { makeInterfaceId } = require('@openzeppelin/test-helpers');
 
 const CHAIN = { chain: 'ethereum', chainId: 1 };
 const BLOCK_NUMBER = 15014793;
@@ -71,12 +82,12 @@ describe('Comprehensive Transformer Test', () => {
       const RECIPIENT = '0x00000000000000000000000000000000000000FF';
       let governor: JsonRpcSigner;
       let dependent: IERC20Like, underlying: IERC20Like[];
-      let transformer: ITransformer;
+      let transformer: BaseTransformer;
       let snapshotId: string;
       before(async () => {
         // Deploy transformer
         await deployments.fixture([transformerName], { keepExistingDeployments: true });
-        transformer = await ethers.getContract<ITransformer>(transformerName);
+        transformer = await ethers.getContract<BaseTransformer>(transformerName);
 
         // Set governor
         governor = await wallet.impersonate(await transformer.governor());
@@ -271,6 +282,47 @@ describe('Comprehensive Transformer Test', () => {
             }
           });
         });
+      });
+      describe('supportsInterface', () => {
+        isInterfaceSupportedTest({
+          name: 'IERC165',
+          interface_: IERC165__factory.createInterface(),
+          expected: true,
+        });
+        isInterfaceSupportedTest({
+          name: 'ITransformer',
+          interface_: ITransformer__factory.createInterface(),
+          expected: true,
+        });
+        isInterfaceSupportedTest({
+          name: 'ICollectableDust',
+          interface_: ICollectableDust__factory.createInterface(),
+          expected: true,
+        });
+        isInterfaceSupportedTest({
+          name: 'IMulticall',
+          interface_: IMulticall__factory.createInterface(),
+          expected: true,
+        });
+        isInterfaceSupportedTest({
+          name: 'IGovernable',
+          interface_: IGovernable__factory.createInterface(),
+          expected: true,
+        });
+        isInterfaceSupportedTest({
+          name: 'IERC20',
+          interface_: IERC20__factory.createInterface(),
+          expected: false,
+        });
+        function isInterfaceSupportedTest({ name, interface_, expected }: { name: string; interface_: utils.Interface; expected: boolean }) {
+          when(`asked if ${name} is supported`, () => {
+            then('result is as expected', async () => {
+              const functions = Object.keys(interface_.functions);
+              const interfaceId = makeInterfaceId.ERC165(functions);
+              expect(await transformer.supportsInterface(interfaceId)).to.equal(expected);
+            });
+          });
+        }
       });
       function isTokenUnderyling(token: string) {
         const underlyingTokens = underlying.map(({ address }) => address.toLowerCase());

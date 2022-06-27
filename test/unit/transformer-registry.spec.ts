@@ -24,6 +24,8 @@ describe('TransformerRegistry', () => {
   const DEPENDENT = '0x0000000000000000000000000000000000000001';
   const ERC_165_INTERFACE_ID = getInterfaceId(ERC165__factory.createInterface());
   const TRANSFORMER_INTERFACE_ID = getInterfaceId(ITransformer__factory.createInterface());
+  const DEPENDENT_AMOUNT = BigNumber.from(10000);
+  const UNDERLYING_AMOUNT = [{ underlying: constants.AddressZero, amount: DEPENDENT_AMOUNT }];
 
   let governor: SignerWithAddress;
   let transformer: FakeContract<ITransformerERC165>;
@@ -137,14 +139,14 @@ describe('TransformerRegistry', () => {
 
   delegateViewTest({
     method: 'calculateTransformToUnderlying',
-    args: (dependent) => [dependent, 10000],
-    returns: [{ underlying: constants.AddressZero, amount: BigNumber.from(10) }] as any,
+    args: (dependent) => [dependent, DEPENDENT_AMOUNT],
+    returns: UNDERLYING_AMOUNT as any,
   });
 
   delegateViewTest({
     method: 'calculateTransformToDependent',
-    args: (dependent) => [dependent, [{ underlying: constants.AddressZero, amount: BigNumber.from(10) }]],
-    returns: BigNumber.from(10000),
+    args: (dependent) => [dependent, UNDERLYING_AMOUNT],
+    returns: DEPENDENT_AMOUNT,
   });
 
   function delegateViewTest<Method extends keyof Functions>({

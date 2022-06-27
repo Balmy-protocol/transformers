@@ -8,7 +8,7 @@ import './IGovernable.sol';
  * @notice This is meant to be used to recover any tokens that were sent to the contract
  *         by mistake
  */
-interface ICollectableDust is IGovernable {
+interface ICollectableDust {
   /// @notice The balance of a given token
   struct TokenBalance {
     address token;

@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-import './utils/ICollectableDust.sol';
-import './utils/IMulticall.sol';
-
 /**
  * @title A contract that can map between one token and their underlying counterparts, and vice-versa
  * @notice This contract defines the concept of dependent tokens. These are tokens that depend on one or more underlying tokens,
@@ -14,7 +11,7 @@ import './utils/IMulticall.sol';
  *         Now, transformers are smart contract that knows how to map dependent tokens into their underlying counterparts,
  *         and vice-versa. We are doing this so that we can abstract the way tokens can be transformed between each other
  */
-interface ITransformer is IMulticall, ICollectableDust {
+interface ITransformer {
   /// @notice An amount of an underlying token
   struct UnderlyingAmount {
     address underlying;

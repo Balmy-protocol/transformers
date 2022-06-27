@@ -33,6 +33,14 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     emit TransformersRegistered(_registrations);
   }
 
+  /// @inheritdoc ITransformerRegistry
+  function removeTransformers(address[] calldata _dependents) external onlyGovernor {
+    for (uint256 i; i < _dependents.length; i++) {
+      _registeredTransformer[_dependents[i]] = ITransformer(address(0));
+    }
+    emit TransformersRemoved(_dependents);
+  }
+
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {
     // TODO: Implement

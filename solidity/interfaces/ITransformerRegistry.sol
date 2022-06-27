@@ -29,6 +29,12 @@ interface ITransformerRegistry is ITransformer {
   event TransformersRegistered(TransformerRegistration[] registrations);
 
   /**
+   * @notice Emitted when dependents are removed from the registry
+   * @param dependents The dependents that were removed
+   */
+  event TransformersRemoved(address[] dependents);
+
+  /**
    * @notice Returns the registered transformer for the given dependents
    * @param dependents The dependents to get the transformer for
    * @return The registered transformers, or the zero address if there isn't any
@@ -41,4 +47,11 @@ interface ITransformerRegistry is ITransformer {
    * @param registrations The associations to register
    */
   function registerTransformers(TransformerRegistration[] calldata registrations) external;
+
+  /**
+   * @notice Removes registration for the given dependents
+   * @dev Can only be called by admin
+   * @param dependents The associations to remove
+   */
+  function removeTransformers(address[] calldata dependents) external;
 }

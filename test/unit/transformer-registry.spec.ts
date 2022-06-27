@@ -16,6 +16,8 @@ chai.use(smock.matchers);
 
 describe('TransformerRegistry', () => {
   const DEPENDENT = '0x0000000000000000000000000000000000000001';
+  const ERC_165_INTERFACE_ID = getInterfaceId(ERC165__factory.createInterface());
+  const TRANSFORMER_INTERFACE_ID = getInterfaceId(ITransformer__factory.createInterface());
 
   let governor: SignerWithAddress;
   let transformer: FakeContract<ITransformer>;
@@ -68,17 +70,15 @@ describe('TransformerRegistry', () => {
       let tx: TransactionResponse;
       given(async () => {
         transformer.supportsInterface.returns(
-          ({ interfaceId }: { interfaceId: string }) =>
-            interfaceId === getInterfaceId(ERC165__factory.createInterface()) ||
-            interfaceId === getInterfaceId(ITransformer__factory.createInterface())
+          ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
         );
         tx = await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
       });
       then('transformer is called correctly', () => {
         expect(transformer.supportsInterface).to.have.been.calledThrice;
         expect(transformer.supportsInterface).to.have.been.calledWith('0xffffffff');
-        expect(transformer.supportsInterface).to.have.been.calledWith(getInterfaceId(ERC165__factory.createInterface()));
-        expect(transformer.supportsInterface).to.have.been.calledWith(getInterfaceId(ITransformer__factory.createInterface()));
+        expect(transformer.supportsInterface).to.have.been.calledWith(ERC_165_INTERFACE_ID);
+        expect(transformer.supportsInterface).to.have.been.calledWith(TRANSFORMER_INTERFACE_ID);
       });
       then('dependents are registered correctly', async () => {
         const transformers = await registry.transformers([DEPENDENT]);
@@ -95,10 +95,6 @@ describe('TransformerRegistry', () => {
         expect(registrations[0].dependents).to.eql([DEPENDENT]);
       });
     });
-    function getInterfaceId(interface_: utils.Interface) {
-      const functions = 'functions' in interface_ ? Object.keys(interface_.functions) : interface_;
-      return makeInterfaceId.ERC165(functions);
-    }
     behaviours.shouldBeExecutableOnlyByGovernor({
       contract: () => registry,
       funcAndSignature: 'registerTransformers',
@@ -106,4 +102,35 @@ describe('TransformerRegistry', () => {
       governor: () => governor,
     });
   });
+
+  describe('removeTransformers', () => {
+    when('removing transformers', () => {
+      let tx: TransactionResponse;
+      given(async () => {
+        const transformer = await smock.fake<IERC165>('IERC165');
+        transformer.supportsInterface.returns(
+          ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
+        );
+        await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
+        tx = await registry.connect(governor).removeTransformers([DEPENDENT]);
+      });
+      then('dependents are removed correctly', async () => {
+        const transformers = await registry.transformers([DEPENDENT]);
+        expect(transformers).to.eql([constants.AddressZero]);
+      });
+      then('event is emitted', async () => {
+        await expect(tx).to.emit(registry, 'TransformersRemoved').withArgs([DEPENDENT]);
+      });
+    });
+    behaviours.shouldBeExecutableOnlyByGovernor({
+      contract: () => registry,
+      funcAndSignature: 'removeTransformers',
+      params: () => [[DEPENDENT]],
+      governor: () => governor,
+    });
+  });
+  function getInterfaceId(interface_: utils.Interface) {
+    const functions = 'functions' in interface_ ? Object.keys(interface_.functions) : interface_;
+    return makeInterfaceId.ERC165(functions);
+  }
 });

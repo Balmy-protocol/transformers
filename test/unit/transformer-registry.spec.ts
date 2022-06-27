@@ -11,7 +11,7 @@ import {
 } from '@typechained';
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
-import { constants, utils } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { behaviours } from '@utils';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
@@ -135,6 +135,18 @@ describe('TransformerRegistry', () => {
     returns: ['0x0000000000000000000000000000000000000002'],
   });
 
+  delegateViewTest({
+    method: 'calculateTransformToUnderlying',
+    args: (dependent) => [dependent, 10000],
+    returns: [{ underlying: constants.AddressZero, amount: BigNumber.from(10) }] as any,
+  });
+
+  delegateViewTest({
+    method: 'calculateTransformToDependent',
+    args: (dependent) => [dependent, [{ underlying: constants.AddressZero, amount: BigNumber.from(10) }]],
+    returns: BigNumber.from(10000),
+  });
+
   function delegateViewTest<Method extends keyof Functions>({
     method,
     args,
@@ -153,10 +165,26 @@ describe('TransformerRegistry', () => {
         });
         then('return value from transformer is returned through registry', async () => {
           const result = await (registry[method] as any)(...args(DEPENDENT));
-          expect(result).to.eql(returns);
+          expectObjectToBeTheSame(result, returns);
         });
       });
     });
+  }
+
+  function expectObjectToBeTheSame(actual: any, expected: any) {
+    if (BigNumber.isBigNumber(actual)) {
+      expect(actual).to.equal(expected);
+    } else {
+      if (typeof actual[0] === 'string') {
+        expect(actual).to.eql(expected);
+      } else {
+        expect(actual.length).to.equal(expected.length);
+        for (let i = 0; i < actual.length; i++) {
+          expect(actual[i].underlying).to.equal(expected[i].underlying);
+          expect(actual[i].amount).to.equal(expected[i].amount);
+        }
+      }
+    }
   }
 
   function assertFailsWithUnknownDependent<Method extends keyof Functions>(

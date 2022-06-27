@@ -20,6 +20,8 @@ interface ITransformer {
 
   /**
    * @notice Returns the addresses of all the underlying tokens, for the given dependent
+   * @dev This function must be unaware of context. The returned values must be the same,
+   *      regardless of who the caller is
    * @param dependent The address of the dependent token
    * @return The addresses of all the underlying tokens
    */
@@ -27,6 +29,8 @@ interface ITransformer {
 
   /**
    * @notice Calculates how much would the transformation to the underlying tokens return
+   * @dev This function must be unaware of context. The returned values must be the same,
+   *      regardless of who the caller is
    * @param dependent The address of the dependent token
    * @param amountDependent The amount to transform
    * @return The transformed amount in each of the underlying tokens
@@ -35,6 +39,8 @@ interface ITransformer {
 
   /**
    * @notice Calculates how much would the transformation to the dependent token return
+   * @dev This function must be unaware of context. The returned values must be the same,
+   *      regardless of who the caller is
    * @param dependent The address of the dependent token
    * @param underlying The amounts of underlying tokens to transform
    * @return amountDependent The transformed amount in the dependent token

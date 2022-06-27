@@ -23,10 +23,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   before('Setup accounts and contracts', async () => {
     [signer] = await ethers.getSigners();
     wToken = await smock.fake('IWETH9');
-    const adapterFactory: ProtocolTokenWrapperTransformer__factory = await ethers.getContractFactory(
+    const factory: ProtocolTokenWrapperTransformer__factory = await ethers.getContractFactory(
       'solidity/contracts/transformers/ProtocolTokenWrapperTransformer.sol:ProtocolTokenWrapperTransformer'
     );
-    transformer = await adapterFactory.deploy(signer.address);
+    transformer = await factory.deploy(signer.address);
     snapshotId = await snapshot.take();
   });
 

@@ -4,7 +4,7 @@ import { deployThroughDeterministicFactory } from '@mean-finance/deterministic-f
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer } = await hre.getNamedAccounts();
+  const { deployer, admin } = await hre.getNamedAccounts();
 
   await deployThroughDeterministicFactory({
     deployer,
@@ -13,8 +13,8 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     contract: 'solidity/contracts/transformers/ERC4626Transformer.sol:ERC4626Transformer',
     bytecode: ERC4626Transformer__factory.bytecode,
     constructorArgs: {
-      types: [],
-      values: [],
+      types: ['address'],
+      values: [admin],
     },
     log: !process.env.TEST,
     overrides: {

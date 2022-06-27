@@ -2,8 +2,6 @@
 
 pragma solidity >=0.8.7 <0.9.0;
 
-import '@openzeppelin/contracts/interfaces/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import './transformers/BaseTransformer.sol';
 import '../interfaces/ITransformerRegistry.sol';

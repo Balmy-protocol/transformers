@@ -14,6 +14,7 @@ import {
   ICollectableDust__factory,
   IMulticall__factory,
   IGovernable__factory,
+  TransformerRegistry,
 } from '@typechained';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
@@ -66,16 +67,31 @@ describe('Comprehensive Transformer Test', () => {
     underlying: ['ETH'],
   });
 
+  transformerComprehensiveTest({
+    transformer: 'TransformerRegistry',
+    dependent: 'WETH',
+    underlying: ['ETH'],
+    transformerDependencies: ['ProtocolTokenWrapperTransformer'],
+    setup: (registry, governor, [transformer]) =>
+      (registry as any as TransformerRegistry)
+        .connect(governor)
+        .registerTransformers([{ transformer: transformer.address, dependents: [TOKENS['WETH'].address] }]),
+  });
+
   function transformerComprehensiveTest({
     transformer: transformerName,
     title,
     dependent: dependentId,
     underlying: underlyingIds,
+    transformerDependencies,
+    setup,
   }: {
     title?: string;
     transformer: string;
     dependent: keyof typeof TOKENS;
     underlying: (keyof typeof TOKENS)[];
+    transformerDependencies?: string[];
+    setup?: (transformer: BaseTransformer, governor: JsonRpcSigner, dependencies: BaseTransformer[]) => Promise<any>;
   }) {
     contract(title ?? transformerName, () => {
       const INITIAL_SIGNER_BALANCE = utils.parseEther('10');
@@ -83,15 +99,24 @@ describe('Comprehensive Transformer Test', () => {
       let governor: JsonRpcSigner;
       let dependent: IERC20Like, underlying: IERC20Like[];
       let transformer: BaseTransformer;
-      let snapshotId: string;
+      let snapshotId: string, resetBalancesSnapshot: string;
       before(async () => {
         // Deploy transformer
-        await deployments.fixture([transformerName], { keepExistingDeployments: true });
+        await deployments.fixture([transformerName, ...(transformerDependencies ?? [])], { keepExistingDeployments: true });
         transformer = await ethers.getContract<BaseTransformer>(transformerName);
 
         // Set governor
         governor = await wallet.impersonate(await transformer.governor());
         await ethers.provider.send('hardhat_setBalance', [governor._address, '0xffffffffffffffff']);
+
+        // Set up transformer
+        const dependencies = await Promise.all(
+          transformerDependencies?.map((transformerName) => ethers.getContract<BaseTransformer>(transformerName)) ?? []
+        );
+        await setup?.(transformer, governor, dependencies);
+
+        // Take snapshot
+        resetBalancesSnapshot = await snapshot.take();
 
         // Sent tokens from whales to signer
         const tokens: IERC20Like[] = [];
@@ -114,6 +139,9 @@ describe('Comprehensive Transformer Test', () => {
       });
       beforeEach(async () => {
         await snapshot.revert(snapshotId);
+      });
+      after(async () => {
+        await snapshot.revert(resetBalancesSnapshot);
       });
       describe('getUnderlying', () => {
         when('asked for the underlying tokens', () => {

@@ -69,7 +69,12 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     uint256 _amountDependent,
     address _recipient
   ) external returns (UnderlyingAmount[] memory) {
-    // TODO: Implement
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    bytes memory _result = _delegateToTransformer(
+      _transformer,
+      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient)
+    );
+    return abi.decode(_result, (UnderlyingAmount[]));
   }
 
   /// @inheritdoc ITransformer
@@ -78,11 +83,22 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     UnderlyingAmount[] calldata _underlying,
     address _recipient
   ) external payable returns (uint256 _amountDependent) {
-    // TODO: Implement
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    bytes memory _result = _delegateToTransformer(
+      _transformer,
+      abi.encodeWithSelector(_transformer.transformToDependent.selector, _dependent, _underlying, _recipient)
+    );
+    return abi.decode(_result, (uint256));
   }
+
+  receive() external payable {}
 
   function _getTransformerOrFail(address _dependent) internal view returns (ITransformer _transformer) {
     _transformer = _registeredTransformer[_dependent];
     if (address(_transformer) == address(0)) revert NoTransformerRegistered(_dependent);
+  }
+
+  function _delegateToTransformer(ITransformer _transformer, bytes memory _data) internal returns (bytes memory) {
+    return Address.functionDelegateCall(address(_transformer), _data);
   }
 }

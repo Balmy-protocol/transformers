@@ -24,10 +24,10 @@ describe('ERC4626Transformer', () => {
     underlyingToken = await smock.fake('IERC20');
     vault = await smock.fake('IERC4626');
     vault.asset.returns(underlyingToken.address);
-    const adapterFactory: ERC4626Transformer__factory = await ethers.getContractFactory(
+    const factory: ERC4626Transformer__factory = await ethers.getContractFactory(
       'solidity/contracts/transformers/ERC4626Transformer.sol:ERC4626Transformer'
     );
-    transformer = await adapterFactory.deploy(signer.address);
+    transformer = await factory.deploy(signer.address);
     snapshotId = await snapshot.take();
   });
 

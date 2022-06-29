@@ -49,7 +49,8 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
 
   /// @inheritdoc ITransformer
   function calculateTransformToUnderlying(address _dependent, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {
-    // TODO: Implement
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    return _transformer.calculateTransformToUnderlying(_dependent, _amountDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -58,7 +59,8 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     view
     returns (uint256 _amountDependent)
   {
-    // TODO: Implement
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    return _transformer.calculateTransformToDependent(_dependent, _underlying);
   }
 
   /// @inheritdoc ITransformer

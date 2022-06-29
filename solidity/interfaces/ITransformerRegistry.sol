@@ -23,6 +23,13 @@ interface ITransformerRegistry is ITransformer {
   error AddressIsNotTransformer(address account);
 
   /**
+   * @notice Thrown when trying to execute an action with a dependent that has no transformer
+   *          associated
+   * @param dependent The dependent that didn't have a transformer
+   */
+  error NoTransformerRegistered(address dependent);
+
+  /**
    * @notice Emitted when new dependents are registered
    * @param registrations The dependents that were registered
    */

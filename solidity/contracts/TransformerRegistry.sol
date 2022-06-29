@@ -43,7 +43,8 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
 
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {
-    // TODO: Implement
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    return _transformer.getUnderlying(_dependent);
   }
 
   /// @inheritdoc ITransformer
@@ -76,5 +77,10 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     address _recipient
   ) external payable returns (uint256 _amountDependent) {
     // TODO: Implement
+  }
+
+  function _getTransformerOrFail(address _dependent) internal view returns (ITransformer _transformer) {
+    _transformer = _registeredTransformer[_dependent];
+    if (address(_transformer) == address(0)) revert NoTransformerRegistered(_dependent);
   }
 }

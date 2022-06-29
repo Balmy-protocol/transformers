@@ -1,14 +1,20 @@
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { given, then, when } from '@utils/bdd';
-import { TransformerRegistry, TransformerRegistry__factory, ITransformer, ERC165__factory, ITransformer__factory } from '@typechained';
+import {
+  TransformerRegistry,
+  TransformerRegistry__factory,
+  ITransformer,
+  ERC165__factory,
+  ITransformer__factory,
+  ITransformerERC165,
+} from '@typechained';
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { constants, utils } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { behaviours } from '@utils';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
-import { IERC165 } from '@mean-finance/deterministic-factory/typechained';
 import { readArgFromEventOrFail } from '@utils/event-utils';
 const { makeInterfaceId } = require('@openzeppelin/test-helpers');
 
@@ -20,13 +26,13 @@ describe('TransformerRegistry', () => {
   const TRANSFORMER_INTERFACE_ID = getInterfaceId(ITransformer__factory.createInterface());
 
   let governor: SignerWithAddress;
-  let transformer: FakeContract<ITransformer>;
+  let transformer: FakeContract<ITransformerERC165>;
   let registry: TransformerRegistry;
   let snapshotId: string;
 
   before('Setup accounts and contracts', async () => {
     [, governor] = await ethers.getSigners();
-    transformer = await smock.fake('ITransformer');
+    transformer = await smock.fake('ITransformerERC165');
     const factory: TransformerRegistry__factory = await ethers.getContractFactory(
       'solidity/contracts/TransformerRegistry.sol:TransformerRegistry'
     );
@@ -36,13 +42,13 @@ describe('TransformerRegistry', () => {
 
   beforeEach(async () => {
     await snapshot.revert(snapshotId);
+    transformer.supportsInterface.reset();
+    transformer.supportsInterface.returns(
+      ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
+    );
   });
 
   describe('registerTransformers', () => {
-    let transformer: FakeContract<IERC165>;
-    given(async () => {
-      transformer = await smock.fake('IERC165');
-    });
     when(`given transformer doesn't implement ERC165`, () => {
       then('tx reverts with message', async () => {
         await behaviours.txShouldRevertWithMessage({
@@ -69,9 +75,6 @@ describe('TransformerRegistry', () => {
     when('given transformer implements ITransformer', () => {
       let tx: TransactionResponse;
       given(async () => {
-        transformer.supportsInterface.returns(
-          ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
-        );
         tx = await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
       });
       then('transformer is called correctly', () => {
@@ -107,10 +110,6 @@ describe('TransformerRegistry', () => {
     when('removing transformers', () => {
       let tx: TransactionResponse;
       given(async () => {
-        const transformer = await smock.fake<IERC165>('IERC165');
-        transformer.supportsInterface.returns(
-          ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
-        );
         await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
         tx = await registry.connect(governor).removeTransformers([DEPENDENT]);
       });
@@ -129,6 +128,57 @@ describe('TransformerRegistry', () => {
       governor: () => governor,
     });
   });
+
+  delegateViewTest({
+    method: 'getUnderlying',
+    args: (dependent) => [dependent],
+    returns: ['0x0000000000000000000000000000000000000002'],
+  });
+
+  function delegateViewTest<Method extends keyof Functions>({
+    method,
+    args,
+    returns,
+  }: {
+    method: Method;
+    args: (dependent: string) => Parameters<Functions[Method]>;
+    returns: Arrayed<Awaited<ReturnType<Functions[Method]>>> | Awaited<ReturnType<Functions[Method]>>;
+  }) {
+    describe(method, () => {
+      assertFailsWithUnknownDependent(method, args);
+      when('dependent is registered', () => {
+        given(async () => {
+          await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
+          transformer[method].returns(returns);
+        });
+        then('return value from transformer is returned through registry', async () => {
+          const result = await (registry[method] as any)(...args(DEPENDENT));
+          expect(result).to.eql(returns);
+        });
+      });
+    });
+  }
+
+  function assertFailsWithUnknownDependent<Method extends keyof Functions>(
+    method: Method,
+    getArgs: (dependent: string) => Parameters<Functions[Method]>
+  ) {
+    when('trying to execute an action with an unregistered dependent', async () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: registry,
+          func: method,
+          args: [...getArgs(constants.AddressZero)],
+          message: 'NoTransformerRegistered',
+        });
+      });
+    });
+  }
+
+  type Functions = ITransformer['functions'];
+  type Awaited<T> = T extends PromiseLike<infer U> ? U : T;
+  type Arrayed<T> = T extends Array<infer U> ? U : T;
+
   function getInterfaceId(interface_: utils.Interface) {
     const functions = 'functions' in interface_ ? Object.keys(interface_.functions) : interface_;
     return makeInterfaceId.ERC165(functions);

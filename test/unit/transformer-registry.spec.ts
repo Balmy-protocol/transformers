@@ -149,6 +149,22 @@ describe('TransformerRegistry', () => {
     returns: DEPENDENT_AMOUNT,
   });
 
+  describe('transformToUnderlying', () => {
+    assertFailsWithUnknownDependent('transformToUnderlying', (dependent) => [
+      dependent,
+      DEPENDENT_AMOUNT,
+      '0x0000000000000000000000000000000000000002',
+    ]);
+  });
+
+  describe('transformToDependent', () => {
+    assertFailsWithUnknownDependent('transformToDependent', (dependent) => [
+      dependent,
+      UNDERLYING_AMOUNT,
+      '0x0000000000000000000000000000000000000002',
+    ]);
+  });
+
   function delegateViewTest<Method extends keyof Functions>({
     method,
     args,

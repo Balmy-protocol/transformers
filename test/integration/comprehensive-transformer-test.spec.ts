@@ -192,6 +192,44 @@ describe('Comprehensive Transformer Test', () => {
           });
         });
       });
+      describe('calculateNeededToTransformToUnderlying', () => {
+        const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
+        when('calculating how much is needed to transform to underlying', () => {
+          let neededDependent: BigNumber;
+          given(async () => {
+            const input = underlying.map((underlying) => ({ underlying: underlying.address, amount: AMOUNT_PER_UNDERLYING }));
+            neededDependent = await transformer.calculateNeededToTransformToUnderlying(dependent.address, input);
+          });
+          then('then transforming the result returns the expected underlying', async () => {
+            // Note: this test assumes that there is no transform fee
+            const returnedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, neededDependent);
+            expect(returnedUnderlying.length).to.equal(underlying.length);
+            for (const { underlying: underlyingToken, amount } of returnedUnderlying) {
+              expect(isTokenUnderyling(underlyingToken)).to.be.true;
+              expect(amount).to.equal(AMOUNT_PER_UNDERLYING);
+            }
+          });
+        });
+      });
+      describe('calculateNeededToTransformToDependent', () => {
+        const AMOUNT_DEPENDENT = utils.parseEther('1');
+        when('calculating how much is needed to transform to dependent', () => {
+          let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
+          given(async () => {
+            neededUnderlying = await transformer.calculateNeededToTransformToDependent(dependent.address, AMOUNT_DEPENDENT);
+          });
+          then('all underlying tokens are part of the result', () => {
+            expect(neededUnderlying.length).to.equal(underlying.length);
+            for (const { underlying: underlyingToken } of neededUnderlying) {
+              expect(isTokenUnderyling(underlyingToken)).to.be.true;
+            }
+          });
+          then('then transforming the result returns the expected underlying', async () => {
+            // Note: this test assumes that there is no transform fee
+            expect(await transformer.calculateTransformToDependent(dependent.address, neededUnderlying)).to.equal(AMOUNT_DEPENDENT);
+          });
+        });
+      });
       describe('transformToUnderlying', () => {
         const AMOUNT_DEPENDENT = utils.parseEther('1');
         when('transforming to underlying', () => {

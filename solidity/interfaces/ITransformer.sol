@@ -51,6 +51,34 @@ interface ITransformer {
     returns (uint256 amountDependent);
 
   /**
+   * @notice Calculates how many dependent tokens are needed to transform to the expected
+   *         amount of underlying
+   * @dev This function must be unaware of context. The returned values must be the same,
+   *      regardless of who the caller is
+   * @param dependent The address of the dependent token
+   * @param expectedUnderlying The expected amounts of underlying tokens
+   * @return neededDependent The amount of dependent needed
+   */
+  function calculateNeededToTransformToUnderlying(address dependent, UnderlyingAmount[] calldata expectedUnderlying)
+    external
+    view
+    returns (uint256 neededDependent);
+
+  /**
+   * @notice Calculates how many underlying tokens are needed to transform to the expected
+   *         amount of dependent
+   * @dev This function must be unaware of context. The returned values must be the same,
+   *      regardless of who the caller is
+   * @param dependent The address of the dependent token
+   * @param expectedDependent The expected amount of dependent tokens
+   * @return neededUnderlying The amount of underlying tokens needed
+   */
+  function calculateNeededToTransformToDependent(address dependent, uint256 expectedDependent)
+    external
+    view
+    returns (UnderlyingAmount[] memory neededUnderlying);
+
+  /**
    * @notice Executes the transformation to the underlying tokens
    * @param dependent The address of the dependent token
    * @param amountDependent The amount to transform
@@ -75,4 +103,30 @@ interface ITransformer {
     UnderlyingAmount[] calldata underlying,
     address recipient
   ) external payable returns (uint256 amountDependent);
+
+  /**
+   * @notice Transforms dependent tokens to an expected amount of underlying tokens
+   * @param dependent The address of the dependent token
+   * @param expectedUnderlying The expected amounts of underlying tokens
+   * @param recipient The address that would receive the underlying tokens
+   * @return spentDependent The amount of spent dependent tokens
+   */
+  function transformToExpectedUnderlying(
+    address dependent,
+    UnderlyingAmount[] calldata expectedUnderlying,
+    address recipient
+  ) external payable returns (uint256 spentDependent);
+
+  /**
+   * @notice Transforms underlying tokens to an expected amount of dependent tokens
+   * @param dependent The address of the dependent token
+   * @param expectedDependent The expected amounts of dependent tokens
+   * @param recipient The address that would receive the underlying tokens
+   * @return spentUnderlying The amount of spent underlying tokens
+   */
+  function transformToExpectedDependent(
+    address dependent,
+    uint256 expectedDependent,
+    address recipient
+  ) external returns (UnderlyingAmount[] memory spentUnderlying);
 }

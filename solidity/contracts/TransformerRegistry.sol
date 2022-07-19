@@ -64,6 +64,20 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   }
 
   /// @inheritdoc ITransformer
+  function calculateNeededToTransformToUnderlying(address _dependent, UnderlyingAmount[] calldata _expectedUnderlying)
+    external
+    view
+    returns (uint256 _neededDependent)
+  {}
+
+  /// @inheritdoc ITransformer
+  function calculateNeededToTransformToDependent(address _dependent, uint256 _expectedDependent)
+    external
+    view
+    returns (UnderlyingAmount[] memory _neededUnderlying)
+  {}
+
+  /// @inheritdoc ITransformer
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
@@ -90,6 +104,20 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     );
     return abi.decode(_result, (uint256));
   }
+
+  /// @inheritdoc ITransformer
+  function transformToExpectedUnderlying(
+    address _dependent,
+    UnderlyingAmount[] calldata _expectedUnderlying,
+    address _recipient
+  ) external payable returns (uint256 _spentDependent) {}
+
+  /// @inheritdoc ITransformer
+  function transformToExpectedDependent(
+    address _dependent,
+    uint256 _expectedDependent,
+    address _recipient
+  ) external returns (UnderlyingAmount[] memory _spentUnderlying) {}
 
   receive() external payable {}
 

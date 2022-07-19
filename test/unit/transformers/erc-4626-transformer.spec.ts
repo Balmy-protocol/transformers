@@ -170,4 +170,27 @@ describe('ERC4626Transformer', () => {
       });
     });
   });
+
+  describe('transformToExpectedUnderlying', () => {
+    when('function is called', () => {
+      given(async () => {
+        vault.withdraw.returns(AMOUNT_DEPENDENT);
+        await transformer.transformToExpectedUnderlying(
+          vault.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          recipient.address
+        );
+      });
+      then('vault is called correctly', () => {
+        expect(vault.withdraw).to.have.been.calledOnceWith(AMOUNT_UNDERLYING, recipient.address, signer.address);
+      });
+      then('spent dependent is returned correctly', async () => {
+        const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
+          vault.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          recipient.address
+        );
+      });
+    });
+  });
 });

@@ -161,50 +161,42 @@ describe('TransformerRegistry', () => {
     returns: UNDERLYING_AMOUNT as any,
   });
 
-  describe('transformToUnderlying', () => {
-    delegateTest({
-      method: 'transformToUnderlying',
-      args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
-      returns: UNDERLYING_AMOUNT as any,
-    });
+  delegateTest({
+    method: 'transformToUnderlying',
+    args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
+    returns: UNDERLYING_AMOUNT as any,
   });
 
-  describe('transformToDependent', () => {
-    delegateTest({
-      method: 'transformToDependent',
-      args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
-      returns: DEPENDENT_AMOUNT,
-      specialArgAssertion: (args) => {
-        expect(args[0]).to.equal(DEPENDENT);
-        expect(args[1]).to.have.lengthOf(1);
-        expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
-        expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
-        expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
-      },
-    });
+  delegateTest({
+    method: 'transformToDependent',
+    args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
+    returns: DEPENDENT_AMOUNT,
+    specialArgAssertion: (args) => {
+      expect(args[0]).to.equal(DEPENDENT);
+      expect(args[1]).to.have.lengthOf(1);
+      expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+      expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+      expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
+    },
   });
 
-  describe('transformToExpectedUnderlying', () => {
-    delegateTest({
-      method: 'transformToExpectedUnderlying',
-      args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
-      returns: DEPENDENT_AMOUNT,
-      specialArgAssertion: (args) => {
-        expect(args[0]).to.equal(DEPENDENT);
-        expect(args[1]).to.have.lengthOf(1);
-        expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
-        expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
-        expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
-      },
-    });
+  delegateTest({
+    method: 'transformToExpectedUnderlying',
+    args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
+    returns: DEPENDENT_AMOUNT,
+    specialArgAssertion: (args) => {
+      expect(args[0]).to.equal(DEPENDENT);
+      expect(args[1]).to.have.lengthOf(1);
+      expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+      expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+      expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
+    },
   });
 
-  describe('transformToExpectedDependent', () => {
-    delegateTest({
-      method: 'transformToExpectedDependent',
-      args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
-      returns: UNDERLYING_AMOUNT as any,
-    });
+  delegateTest({
+    method: 'transformToExpectedDependent',
+    args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
+    returns: UNDERLYING_AMOUNT as any,
   });
 
   function delegateViewTest<Method extends keyof Functions>({

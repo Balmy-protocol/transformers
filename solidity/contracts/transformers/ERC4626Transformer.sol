@@ -89,6 +89,7 @@ contract ERC4626Transformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
+  // slither-disable-next-line arbitrary-send
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,

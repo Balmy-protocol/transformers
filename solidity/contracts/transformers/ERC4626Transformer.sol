@@ -78,14 +78,14 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external payable returns (uint256 _spentDependent) {}
+  ) external returns (uint256 _spentDependent) {}
 
   /// @inheritdoc ITransformer
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
     address _recipient
-  ) external returns (UnderlyingAmount[] memory _spentUnderlying) {}
+  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {}
 
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

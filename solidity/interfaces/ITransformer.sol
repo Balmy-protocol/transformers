@@ -115,7 +115,7 @@ interface ITransformer {
     address dependent,
     UnderlyingAmount[] calldata expectedUnderlying,
     address recipient
-  ) external payable returns (uint256 spentDependent);
+  ) external returns (uint256 spentDependent);
 
   /**
    * @notice Transforms underlying tokens to an expected amount of dependent tokens
@@ -128,5 +128,5 @@ interface ITransformer {
     address dependent,
     uint256 expectedDependent,
     address recipient
-  ) external returns (UnderlyingAmount[] memory spentUnderlying);
+  ) external payable returns (UnderlyingAmount[] memory spentUnderlying);
 }

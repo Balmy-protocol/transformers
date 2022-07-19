@@ -47,7 +47,6 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
-  // slither-disable-next-line arbitrary-send
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
@@ -58,7 +57,6 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
-  // slither-disable-next-line arbitrary-send
   function transformToDependent(
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
@@ -90,6 +88,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
 
   receive() external payable {}
 
+  // slither-disable-next-line arbitrary-send
   function _takeAndUnwrap(
     IWETH9 _dependent,
     uint256 _amount,
@@ -100,6 +99,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     payable(_recipient).transfer(_amount);
   }
 
+  // slither-disable-next-line arbitrary-send
   function _wrapAndTransfer(
     IWETH9 _dependent,
     uint256 _amount,

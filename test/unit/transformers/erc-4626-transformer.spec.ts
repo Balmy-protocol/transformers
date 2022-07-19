@@ -35,11 +35,15 @@ describe('ERC4626Transformer', () => {
     await snapshot.revert(snapshotId);
     vault.previewRedeem.reset();
     vault.previewDeposit.reset();
+    vault.previewMint.reset();
     vault.redeem.reset();
     vault.deposit.reset();
+    vault.mint.reset();
     underlyingToken.transferFrom.reset();
     underlyingToken.approve.reset();
+    underlyingToken.transfer.reset();
     underlyingToken.transferFrom.returns(true);
+    underlyingToken.transfer.returns(true);
   });
 
   describe('getUnderlying', () => {
@@ -191,6 +195,59 @@ describe('ERC4626Transformer', () => {
           recipient.address
         );
         expect(spentDependent).to.equal(AMOUNT_DEPENDENT);
+      });
+    });
+  });
+
+  describe('transformToExpectedDependent', () => {
+    when('preview matches mint', () => {
+      given(async () => {
+        vault.previewMint.returns(AMOUNT_UNDERLYING);
+        vault.mint.returns(AMOUNT_UNDERLYING);
+        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+      });
+      then('preview mint is called correctly', () => {
+        expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
+      });
+      then('underlying token is taken from caller', () => {
+        expect(underlyingToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_UNDERLYING);
+      });
+      then('underlying token is approved for vault', () => {
+        expect(underlyingToken.approve).to.have.been.calledOnceWith(vault.address, AMOUNT_UNDERLYING);
+      });
+      then('mint is called correctly', () => {
+        expect(vault.mint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address);
+      });
+      then('no transfer is executed', () => {
+        expect(underlyingToken.transfer).to.not.have.been.called;
+      });
+      then('dependent amount is returned correctly', async () => {
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        expect(spentUnderlying.length).to.equal(1);
+        expect(spentUnderlying[0].amount).to.equal(AMOUNT_UNDERLYING);
+        expect(spentUnderlying[0].underlying).to.equal(underlyingToken.address);
+      });
+    });
+    when('mint ends up needing less than expected', () => {
+      given(async () => {
+        vault.previewMint.returns(AMOUNT_UNDERLYING);
+        vault.mint.returns(AMOUNT_UNDERLYING - 1);
+        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+      });
+      then('preview mint is called correctly', () => {
+        expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
+      });
+      then('underlying token is taken from caller', () => {
+        expect(underlyingToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_UNDERLYING);
+      });
+      then('underlying token is approved for vault', () => {
+        expect(underlyingToken.approve).to.have.been.calledOnceWith(vault.address, AMOUNT_UNDERLYING);
+      });
+      then('mint is called correctly', () => {
+        expect(vault.mint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address);
+      });
+      then('unspent underlying is returned', () => {
+        expect(underlyingToken.transfer).to.have.been.calledOnceWith(signer.address, 1);
       });
     });
   });

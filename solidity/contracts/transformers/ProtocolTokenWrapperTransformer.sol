@@ -46,6 +46,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
+  // slither-disable-next-line arbitrary-send
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
@@ -58,6 +59,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
+  // slither-disable-next-line arbitrary-send
   function transformToDependent(
     address _dependent,
     UnderlyingAmount[] calldata _underlying,

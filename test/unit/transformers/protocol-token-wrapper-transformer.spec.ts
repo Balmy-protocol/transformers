@@ -85,6 +85,34 @@ describe('ProtocolTokenWrapperTransformer', () => {
     });
   });
 
+  describe('calculateNeededToTransformToUnderlying', () => {
+    when('function is called', () => {
+      let neededDependent: BigNumber;
+      given(async () => {
+        neededDependent = await transformer.calculateNeededToTransformToUnderlying(wToken.address, [
+          { underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP },
+        ]);
+      });
+      then('needed dependent is returned correctly', async () => {
+        expect(neededDependent).to.equal(AMOUNT_TO_MAP);
+      });
+    });
+  });
+
+  describe('calculateNeededToTransformToDependent', () => {
+    when('function is called', () => {
+      let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
+      given(async () => {
+        neededUnderlying = await transformer.calculateNeededToTransformToDependent(wToken.address, AMOUNT_TO_MAP);
+      });
+      then('needed underlying is returned correctly', async () => {
+        expect(neededUnderlying.length).to.equal(1);
+        expect(neededUnderlying[0].amount).to.equal(AMOUNT_TO_MAP);
+        expect(neededUnderlying[0].underlying).to.equal(PROTOCOL_TOKEN);
+      });
+    });
+  });
+
   describe('transformToUnderlying', () => {
     when('function is called', () => {
       given(async () => {

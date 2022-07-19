@@ -28,18 +28,22 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
-  function calculateNeededToTransformToUnderlying(address _dependent, UnderlyingAmount[] calldata _expectedUnderlying)
+  function calculateNeededToTransformToUnderlying(address, UnderlyingAmount[] calldata _expectedUnderlying)
     external
-    view
+    pure
     returns (uint256 _neededDependent)
-  {}
+  {
+    _neededDependent = _expectedUnderlying[0].amount;
+  }
 
   /// @inheritdoc ITransformer
-  function calculateNeededToTransformToDependent(address _dependent, uint256 _expectedDependent)
+  function calculateNeededToTransformToDependent(address, uint256 _expectedDependent)
     external
-    view
+    pure
     returns (UnderlyingAmount[] memory _neededUnderlying)
-  {}
+  {
+    return _toUnderylingAmount(PROTOCOL_TOKEN, _expectedDependent);
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(

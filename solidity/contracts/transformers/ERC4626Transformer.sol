@@ -39,14 +39,20 @@ contract ERC4626Transformer is BaseTransformer {
     external
     view
     returns (uint256 _neededDependent)
-  {}
+  {
+    _neededDependent = IERC4626(_dependent).previewWithdraw(_expectedUnderlying[0].amount);
+  }
 
   /// @inheritdoc ITransformer
   function calculateNeededToTransformToDependent(address _dependent, uint256 _expectedDependent)
     external
     view
     returns (UnderlyingAmount[] memory _neededUnderlying)
-  {}
+  {
+    address _underlying = IERC4626(_dependent).asset();
+    uint256 _amount = IERC4626(_dependent).previewMint(_expectedDependent);
+    return _toUnderylingAmount(_underlying, _amount);
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(

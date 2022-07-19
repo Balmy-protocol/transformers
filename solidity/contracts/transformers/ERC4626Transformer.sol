@@ -105,7 +105,7 @@ contract ERC4626Transformer is BaseTransformer {
     uint256 _spentUnderlying = IERC4626(_dependent).mint(_expectedDependent, _recipient);
     // If some tokens were left unspent, then return to caller
     if (_spentUnderlying < _neededUnderlying) {
-      _underlying.transfer(msg.sender, _neededUnderlying - _spentUnderlying);
+      _underlying.safeTransfer(msg.sender, _neededUnderlying - _spentUnderlying);
     }
     return _toUnderylingAmount(address(_underlying), _spentUnderlying);
   }

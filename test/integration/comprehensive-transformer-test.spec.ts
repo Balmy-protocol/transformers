@@ -336,7 +336,6 @@ describe('Comprehensive Transformer Test', () => {
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
           });
-
           then('underlying tokens are transferred', async () => {
             for (const { underlying, amount } of neededUnderlying) {
               const underlyingToken = await wrap(underlying);

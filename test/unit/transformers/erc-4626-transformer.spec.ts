@@ -190,6 +190,7 @@ describe('ERC4626Transformer', () => {
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
           recipient.address
         );
+        expect(spentDependent).to.equal(AMOUNT_DEPENDENT);
       });
     });
   });

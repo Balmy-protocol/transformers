@@ -9,6 +9,7 @@ import './BaseTransformer.sol';
 /// @title An implementaton of `ITransformer` for protocol token wrappers (WETH/WBNB/WMATIC)
 contract ProtocolTokenWrapperTransformer is BaseTransformer {
   using SafeERC20 for IERC20;
+  using SafeERC20 for IWETH9;
 
   constructor(address _governor) Governable(_governor) {}
 
@@ -52,9 +53,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     uint256 _amountDependent,
     address _recipient
   ) external returns (UnderlyingAmount[] memory) {
-    IERC20(_dependent).safeTransferFrom(msg.sender, address(this), _amountDependent);
-    IWETH9(_dependent).withdraw(_amountDependent);
-    payable(_recipient).transfer(_amountDependent);
+    _takeAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
     return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
   }
 
@@ -66,8 +65,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient
   ) external payable returns (uint256 _amountDependent) {
     _amountDependent = _underlying[0].amount;
-    IWETH9(_dependent).deposit{value: _amountDependent}();
-    IERC20(_dependent).safeTransfer(_recipient, _amountDependent);
+    _wrapAndTransfer(IWETH9(_dependent), _amountDependent, _recipient);
   }
 
   /// @inheritdoc ITransformer
@@ -75,16 +73,41 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external returns (uint256 _spentDependent) {}
+  ) external returns (uint256 _spentDependent) {
+    _spentDependent = _expectedUnderlying[0].amount;
+    _takeAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
+  }
 
   /// @inheritdoc ITransformer
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
     address _recipient
-  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {}
+  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
+    _wrapAndTransfer(IWETH9(_dependent), _expectedDependent, _recipient);
+    return _toUnderylingAmount(PROTOCOL_TOKEN, _expectedDependent);
+  }
 
   receive() external payable {}
+
+  function _takeAndUnwrap(
+    IWETH9 _dependent,
+    uint256 _amount,
+    address _recipient
+  ) internal {
+    _dependent.safeTransferFrom(msg.sender, address(this), _amount);
+    _dependent.withdraw(_amount);
+    payable(_recipient).transfer(_amount);
+  }
+
+  function _wrapAndTransfer(
+    IWETH9 _dependent,
+    uint256 _amount,
+    address _recipient
+  ) internal {
+    _dependent.deposit{value: _amount}();
+    _dependent.safeTransfer(_recipient, _amount);
+  }
 
   function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

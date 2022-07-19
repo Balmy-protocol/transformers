@@ -162,19 +162,49 @@ describe('TransformerRegistry', () => {
   });
 
   describe('transformToUnderlying', () => {
-    assertFailsWithUnknownDependent('transformToUnderlying', (dependent) => [
-      dependent,
-      DEPENDENT_AMOUNT,
-      '0x0000000000000000000000000000000000000002',
-    ]);
+    delegateTest({
+      method: 'transformToUnderlying',
+      args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
+      returns: UNDERLYING_AMOUNT as any,
+    });
   });
 
   describe('transformToDependent', () => {
-    assertFailsWithUnknownDependent('transformToDependent', (dependent) => [
-      dependent,
-      UNDERLYING_AMOUNT,
-      '0x0000000000000000000000000000000000000002',
-    ]);
+    delegateTest({
+      method: 'transformToDependent',
+      args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
+      returns: DEPENDENT_AMOUNT,
+      specialArgAssertion: (args) => {
+        expect(args[0]).to.equal(DEPENDENT);
+        expect(args[1]).to.have.lengthOf(1);
+        expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+        expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+        expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
+      },
+    });
+  });
+
+  describe('transformToExpectedUnderlying', () => {
+    delegateTest({
+      method: 'transformToExpectedUnderlying',
+      args: (dependent) => [dependent, UNDERLYING_AMOUNT, '0x0000000000000000000000000000000000000002'],
+      returns: DEPENDENT_AMOUNT,
+      specialArgAssertion: (args) => {
+        expect(args[0]).to.equal(DEPENDENT);
+        expect(args[1]).to.have.lengthOf(1);
+        expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+        expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+        expect(args[2]).to.equal('0x0000000000000000000000000000000000000002');
+      },
+    });
+  });
+
+  describe('transformToExpectedDependent', () => {
+    delegateTest({
+      method: 'transformToExpectedDependent',
+      args: (dependent) => [dependent, DEPENDENT_AMOUNT, '0x0000000000000000000000000000000000000002'],
+      returns: UNDERLYING_AMOUNT as any,
+    });
   });
 
   function delegateViewTest<Method extends keyof Functions>({
@@ -195,6 +225,44 @@ describe('TransformerRegistry', () => {
         });
         then('return value from transformer is returned through registry', async () => {
           const result = await (registry[method] as any)(...args(DEPENDENT));
+          expectObjectToBeTheSame(result, returns);
+        });
+      });
+    });
+  }
+
+  function delegateTest<Method extends keyof Functions>({
+    method,
+    args,
+    returns,
+    specialArgAssertion,
+  }: {
+    method: Method;
+    args: (dependent: string) => Parameters<Functions[Method]>;
+    returns: Arrayed<Awaited<ReturnType<Functions[Method]>>> | Awaited<ReturnType<Functions[Method]>>;
+    specialArgAssertion?: (args: any[]) => void;
+  }) {
+    describe(method, () => {
+      assertFailsWithUnknownDependent(method, args);
+      when('dependent is registered', () => {
+        given(async () => {
+          await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [DEPENDENT] }]);
+          transformer[method].returns(returns);
+        });
+        then('delegation worked as expected', async () => {
+          await (registry[method] as any)(...args(DEPENDENT));
+          if (specialArgAssertion) {
+            expect(transformer[method]).to.have.been.calledOnce.delegatedFrom(registry.address);
+            const args = transformer[method].getCall(0).args as any[];
+            specialArgAssertion(args);
+          } else {
+            expect(transformer[method])
+              .to.have.been.calledOnceWith(...args(DEPENDENT))
+              .delegatedFrom(registry.address);
+          }
+        });
+        then('return value from transformer is returned through registry', async () => {
+          const result = await (registry.callStatic[method] as any)(...args(DEPENDENT));
           expectObjectToBeTheSame(result, returns);
         });
       });
@@ -233,7 +301,7 @@ describe('TransformerRegistry', () => {
     });
   }
 
-  type Functions = ITransformer['functions'];
+  type Functions = ITransformer['callStatic'];
   type Awaited<T> = T extends PromiseLike<infer U> ? U : T;
   type Arrayed<T> = T extends Array<infer U> ? U : T;
 

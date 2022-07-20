@@ -49,6 +49,7 @@ describe('TransformerRegistry', () => {
     await snapshot.revert(snapshotId);
     dependent.balanceOf.reset();
     transformer.transformToUnderlying.reset();
+    transformer.transformToDependent.reset();
     transformer.supportsInterface.reset();
     transformer.supportsInterface.returns(
       ({ interfaceId }: { interfaceId: string }) => interfaceId === ERC_165_INTERFACE_ID || interfaceId === TRANSFORMER_INTERFACE_ID
@@ -205,6 +206,38 @@ describe('TransformerRegistry', () => {
       then('return value from transformer is returned through registry', async () => {
         const result = await registry.callStatic.transformAllToUnderlying(dependent.address, RECIPIENT);
         expectObjectToBeTheSame(result, UNDERLYING_AMOUNT);
+      });
+    });
+  });
+
+  describe('transformAllToDependent', () => {
+    assertFailsWithUnknownDependent('transformAllToDependent', () => [dependent.address, RECIPIENT]);
+    when('dependent is registered', () => {
+      const UNDERLYING_AMOUNT = BigNumber.from(123456);
+      let underlyingToken: FakeContract<IERC20>;
+      given(async () => {
+        await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [dependent.address] }]);
+        underlyingToken = await smock.fake('IERC20');
+        transformer.getUnderlying.returns([underlyingToken.address]);
+        transformer.transformToDependent.returns(DEPENDENT_AMOUNT);
+        underlyingToken.balanceOf.returns(UNDERLYING_AMOUNT);
+        await registry.transformAllToDependent(dependent.address, RECIPIENT);
+      });
+      then('balance of is called correctly', async () => {
+        expect(underlyingToken.balanceOf).to.have.been.calledOnceWith(signer.address);
+      });
+      then('delegation worked as expected', async () => {
+        expect(transformer.transformToDependent).to.have.been.calledOnce.delegatedFrom(registry.address);
+        const args = transformer.transformToDependent.getCall(0).args as any[];
+        expect(args[0]).to.equal(dependent.address);
+        expect(args[1]).to.have.lengthOf(1);
+        expect(args[1][0].underlying).to.equal(underlyingToken.address);
+        expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT);
+        expect(args[2]).to.equal(RECIPIENT);
+      });
+      then('return value from transformer is returned through registry', async () => {
+        const result = await registry.callStatic.transformAllToDependent(dependent.address, RECIPIENT);
+        expect(result).to.equal(DEPENDENT_AMOUNT);
       });
     });
   });

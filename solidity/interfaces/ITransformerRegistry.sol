@@ -70,4 +70,13 @@ interface ITransformerRegistry is ITransformer {
    * @return The transformed amount in each of the underlying tokens
    */
   function transformAllToUnderlying(address dependent, address recipient) external returns (UnderlyingAmount[] memory);
+
+  /**
+   * @notice Executes a transformation to the dependent token, by taking the caller's entire
+   *         underlying balance. This is meant to be used as part of a multi-hop swap
+   * @param dependent The address of the dependent token
+   * @param recipient The address that would receive the dependent tokens
+   * @return amountDependent The transformed amount in the dependent token
+   */
+  function transformAllToDependent(address dependent, address recipient) external returns (uint256 amountDependent);
 }

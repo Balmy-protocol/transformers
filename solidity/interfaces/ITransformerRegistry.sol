@@ -61,4 +61,13 @@ interface ITransformerRegistry is ITransformer {
    * @param dependents The associations to remove
    */
   function removeTransformers(address[] calldata dependents) external;
+
+  /**
+   * @notice Executes a transformation to the underlying tokens, by taking the caller's entire
+   *         dependent balance. This is meant to be used as part of a multi-hop swap
+   * @param dependent The address of the dependent token
+   * @param recipient The address that would receive the underlying tokens
+   * @return The transformed amount in each of the underlying tokens
+   */
+  function transformAllToUnderlying(address dependent, address recipient) external returns (UnderlyingAmount[] memory);
 }

@@ -112,6 +112,17 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   }
 
   /// @inheritdoc ITransformer
+  function transformAllToUnderlying(address _dependent, address _recipient) external returns (UnderlyingAmount[] memory) {
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    uint256 _amountDependent = IERC20(_dependent).balanceOf(msg.sender);
+    bytes memory _result = _delegateToTransformer(
+      _transformer,
+      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient)
+    );
+    return abi.decode(_result, (UnderlyingAmount[]));
+  }
+
+  /// @inheritdoc ITransformer
   function transformToExpectedUnderlying(
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,

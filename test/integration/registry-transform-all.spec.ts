@@ -39,12 +39,12 @@ describe('Transformer Registry - Transform All', () => {
     await fork({ ...CHAIN, blockNumber: BLOCK_NUMBER });
 
     // Deploy transformer
-    await deployments.fixture(['TransformerRegistry', 'ERC4626Transformer'], { keepExistingDeployments: true });
+    await deployments.fixture(['TransformerRegistry', 'ERC4626Transformer'], { keepExistingDeployments: false });
     registry = await ethers.getContract<TransformerRegistry>('TransformerRegistry');
     const transformer = await ethers.getContract<BaseTransformer>('ERC4626Transformer');
 
     // Set governor
-    const governor = await wallet.impersonate(await transformer.governor());
+    const governor = await wallet.impersonate(await registry.governor());
     await ethers.provider.send('hardhat_setBalance', [governor._address, '0xffffffffffffffff']);
 
     // Load tokens

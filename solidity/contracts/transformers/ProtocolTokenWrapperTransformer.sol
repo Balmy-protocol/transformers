@@ -52,7 +52,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     uint256 _amountDependent,
     address _recipient
   ) external returns (UnderlyingAmount[] memory) {
-    _takeAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
+    _takeFromSenderAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
     return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
   }
 
@@ -73,7 +73,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient
   ) external returns (uint256 _spentDependent) {
     _spentDependent = _expectedUnderlying[0].amount;
-    _takeAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
+    _takeFromSenderAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
   }
 
   /// @inheritdoc ITransformer
@@ -89,7 +89,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   receive() external payable {}
 
   // slither-disable-next-line arbitrary-send
-  function _takeAndUnwrap(
+  function _takeFromSenderAndUnwrap(
     IWETH9 _dependent,
     uint256 _amount,
     address _recipient

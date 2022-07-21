@@ -87,6 +87,42 @@ describe('ERC4626Transformer', () => {
     });
   });
 
+  describe('calculateNeededToTransformToUnderlying', () => {
+    when('function is called', () => {
+      let neededDependent: BigNumber;
+      given(async () => {
+        vault.previewWithdraw.returns(AMOUNT_DEPENDENT);
+        neededDependent = await transformer.calculateNeededToTransformToUnderlying(vault.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
+      });
+      then('vault is called correctly', () => {
+        expect(vault.previewWithdraw).to.have.been.calledOnceWith(AMOUNT_UNDERLYING);
+      });
+      then('needed dependent is returned correctly', async () => {
+        expect(neededDependent).to.equal(AMOUNT_DEPENDENT);
+      });
+    });
+  });
+
+  describe('calculateNeededToTransformToDependent', () => {
+    when('function is called', () => {
+      let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
+      given(async () => {
+        vault.previewMint.returns(AMOUNT_UNDERLYING);
+        neededUnderlying = await transformer.calculateNeededToTransformToDependent(vault.address, AMOUNT_DEPENDENT);
+      });
+      then('vault is called correctly', () => {
+        expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
+      });
+      then('needed underlying is returned correctly', async () => {
+        expect(neededUnderlying.length).to.equal(1);
+        expect(neededUnderlying[0].amount).to.equal(AMOUNT_UNDERLYING);
+        expect(neededUnderlying[0].underlying).to.equal(underlyingToken.address);
+      });
+    });
+  });
+
   describe('transformToUnderlying', () => {
     when('function is called', () => {
       given(async () => {

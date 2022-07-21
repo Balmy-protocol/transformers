@@ -292,6 +292,67 @@ describe('Comprehensive Transformer Test', () => {
           });
         });
       });
+      describe('transformToExpectedUnderlying', () => {
+        const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
+        when('transforming to an expected amount of underlying', () => {
+          let neededDependent: BigNumber;
+          given(async () => {
+            const input = underlying.map((token) => ({ underlying: token.address, amount: AMOUNT_PER_UNDERLYING }));
+            neededDependent = await transformer.calculateNeededToTransformToUnderlying(dependent.address, input);
+            await dependent.connect(signer).approve(transformer.address, neededDependent);
+            await transformer.connect(signer).transformToExpectedUnderlying(dependent.address, input, RECIPIENT);
+          });
+          then('allowance is spent', async () => {
+            expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
+          });
+          then('dependent tokens are transferred', async () => {
+            const balance = await dependent.balanceOf(signer.address);
+            expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(neededDependent));
+          });
+          then('expected underlying tokens are sent to the recipient', async () => {
+            for (const underlyingToken of underlying) {
+              const recipientBalance = await underlyingToken.balanceOf(RECIPIENT);
+              expect(recipientBalance).to.equal(AMOUNT_PER_UNDERLYING);
+            }
+          });
+        });
+      });
+      describe('transformToExpectedDependent', () => {
+        const AMOUNT_DEPENDENT = utils.parseEther('1');
+        when('transforming to an expected amount of dependent', () => {
+          let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
+          let gasSpent: BigNumber;
+          given(async () => {
+            neededUnderlying = await transformer.calculateNeededToTransformToDependent(dependent.address, AMOUNT_DEPENDENT);
+            for (const { underlying, amount } of neededUnderlying) {
+              const underlyingToken = await wrap(underlying);
+              await underlyingToken.connect(signer).approve(transformer.address, amount);
+            }
+            const value = isTokenUnderyling(PROTOCOL_TOKEN) ? neededUnderlying[0].amount : constants.Zero;
+            const tx = await transformer.connect(signer).transformToExpectedDependent(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, { value });
+            const { gasUsed, effectiveGasPrice } = await tx.wait();
+            gasSpent = gasUsed.mul(effectiveGasPrice);
+          });
+          then('allowance is spent', async () => {
+            expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
+          });
+          then('underlying tokens are transferred', async () => {
+            for (const { underlying, amount } of neededUnderlying) {
+              const underlyingToken = await wrap(underlying);
+              const balance = await underlyingToken.balanceOf(signer.address);
+              if (underlyingToken.address === PROTOCOL_TOKEN) {
+                expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(amount).sub(gasSpent));
+              } else {
+                expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(amount));
+              }
+            }
+          });
+          then('expected dependent tokens are sent to the recipient', async () => {
+            const recipientBalance = await dependent.balanceOf(RECIPIENT);
+            expect(recipientBalance).to.equal(AMOUNT_DEPENDENT);
+          });
+        });
+      });
       describe('sendDust', () => {
         const RECIPIENT = wallet.generateRandomAddress();
         when('sending protocol token dust', () => {

@@ -189,6 +189,83 @@ describe('ProtocolTokenWrapperTransformer', () => {
     });
   });
 
+  describe('transformToExpectedUnderlying', () => {
+    when('function is called', () => {
+      given(async () => {
+        // We are setting balance to the transformer, to simulate a withdraw from the wToken
+        setBalance(transformer.address, AMOUNT_TO_MAP);
+        await transformer.transformToExpectedUnderlying(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT);
+      });
+      then('wToken is taken from caller', () => {
+        expect(wToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_TO_MAP);
+      });
+      then('wToken is called correctly', () => {
+        expect(wToken.withdraw).to.have.been.calledOnceWith(AMOUNT_TO_MAP);
+      });
+      then('protocol token is transferred correctly to the recipient', async () => {
+        const balance = await ethers.provider.getBalance(RECIPIENT);
+        expect(balance).to.equal(AMOUNT_TO_MAP);
+      });
+      then('protocol token is removed from the transformer', async () => {
+        const balance = await ethers.provider.getBalance(transformer.address);
+        expect(balance).to.equal(0);
+      });
+      then('returns spent dependent correctly', async () => {
+        // We are setting balance to the transformer, to simulate a withdraw from the wToken
+        setBalance(transformer.address, AMOUNT_TO_MAP);
+        const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
+          wToken.address,
+          [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }],
+          RECIPIENT
+        );
+        expect(spentDependent).to.equal(AMOUNT_TO_MAP);
+      });
+    });
+  });
+
+  describe('transformToExpectedDependent', () => {
+    when('sending less in value than specified as parameter', () => {
+      let tx: Promise<TransactionResponse>;
+      given(() => {
+        tx = transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+          value: AMOUNT_TO_MAP - 1,
+        });
+      });
+      then('tx reverts', async () => {
+        await expect(tx).to.have.reverted;
+      });
+    });
+    when('function is called correctly', () => {
+      given(async () => {
+        await transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+          value: AMOUNT_TO_MAP,
+        });
+      });
+      then('protocol token has been sent to wToken', async () => {
+        const balance = await ethers.provider.getBalance(wToken.address);
+        expect(balance).to.equal(AMOUNT_TO_MAP);
+      });
+      then('transformer has no protocol token', async () => {
+        const balance = await ethers.provider.getBalance(transformer.address);
+        expect(balance).to.equal(0);
+      });
+      then('wToken is called correctly', () => {
+        expect(wToken.deposit).to.have.been.calledOnce;
+      });
+      then('dependent token is transferred to recipient', () => {
+        expect(wToken.transfer).to.have.been.calledOnceWith(RECIPIENT, AMOUNT_TO_MAP);
+      });
+      then('returns spent underlying correctly', async () => {
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+          value: AMOUNT_TO_MAP,
+        });
+        expect(spentUnderlying.length).to.equal(1);
+        expect(spentUnderlying[0].amount).to.equal(AMOUNT_TO_MAP);
+        expect(spentUnderlying[0].underlying).to.equal(PROTOCOL_TOKEN);
+      });
+    });
+  });
+
   async function setBalance(address: string, amount: BigNumberish) {
     const amountToSwapHex = utils.hexStripZeros(BigNumber.from(amount).toHexString());
     await ethers.provider.send('hardhat_setBalance', [address, amountToSwapHex]);

@@ -28,6 +28,20 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
+  function calculateNeededToTransformToUnderlying(address _dependent, UnderlyingAmount[] calldata _expectedUnderlying)
+    external
+    view
+    returns (uint256 _neededDependent)
+  {}
+
+  /// @inheritdoc ITransformer
+  function calculateNeededToTransformToDependent(address _dependent, uint256 _expectedDependent)
+    external
+    view
+    returns (UnderlyingAmount[] memory _neededUnderlying)
+  {}
+
+  /// @inheritdoc ITransformer
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
@@ -49,6 +63,20 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     IWETH9(_dependent).deposit{value: _amountDependent}();
     IERC20(_dependent).safeTransfer(_recipient, _amountDependent);
   }
+
+  /// @inheritdoc ITransformer
+  function transformToExpectedUnderlying(
+    address _dependent,
+    UnderlyingAmount[] calldata _expectedUnderlying,
+    address _recipient
+  ) external returns (uint256 _spentDependent) {}
+
+  /// @inheritdoc ITransformer
+  function transformToExpectedDependent(
+    address _dependent,
+    uint256 _expectedDependent,
+    address _recipient
+  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {}
 
   receive() external payable {}
 

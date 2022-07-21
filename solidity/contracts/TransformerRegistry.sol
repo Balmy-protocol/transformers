@@ -116,14 +116,28 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external returns (uint256 _spentDependent) {}
+  ) external returns (uint256 _spentDependent) {
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    bytes memory _result = _delegateToTransformer(
+      _transformer,
+      abi.encodeWithSelector(_transformer.transformToExpectedUnderlying.selector, _dependent, _expectedUnderlying, _recipient)
+    );
+    return abi.decode(_result, (uint256));
+  }
 
   /// @inheritdoc ITransformer
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
     address _recipient
-  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {}
+  ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    bytes memory _result = _delegateToTransformer(
+      _transformer,
+      abi.encodeWithSelector(_transformer.transformToExpectedDependent.selector, _dependent, _expectedDependent, _recipient)
+    );
+    return abi.decode(_result, (UnderlyingAmount[]));
+  }
 
   receive() external payable {}
 

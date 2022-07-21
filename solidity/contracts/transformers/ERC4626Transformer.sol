@@ -84,7 +84,9 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external returns (uint256 _spentDependent) {}
+  ) external returns (uint256 _spentDependent) {
+    _spentDependent = IERC4626(_dependent).withdraw(_expectedUnderlying[0].amount, _recipient, msg.sender);
+  }
 
   /// @inheritdoc ITransformer
   function transformToExpectedDependent(

@@ -184,7 +184,7 @@ describe('ERC4626Transformer', () => {
       then('vault is called correctly', () => {
         expect(vault.withdraw).to.have.been.calledOnceWith(AMOUNT_UNDERLYING, recipient.address, signer.address);
       });
-      then('spent dependent is returned correctly', async () => {
+      then('returns spent dependent correctly', async () => {
         const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],

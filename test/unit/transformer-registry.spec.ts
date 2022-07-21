@@ -149,6 +149,18 @@ describe('TransformerRegistry', () => {
     returns: DEPENDENT_AMOUNT,
   });
 
+  delegateViewTest({
+    method: 'calculateNeededToTransformToUnderlying',
+    args: (dependent) => [dependent, UNDERLYING_AMOUNT],
+    returns: DEPENDENT_AMOUNT,
+  });
+
+  delegateViewTest({
+    method: 'calculateNeededToTransformToDependent',
+    args: (dependent) => [dependent, DEPENDENT_AMOUNT],
+    returns: UNDERLYING_AMOUNT as any,
+  });
+
   describe('transformToUnderlying', () => {
     assertFailsWithUnknownDependent('transformToUnderlying', (dependent) => [
       dependent,

@@ -68,14 +68,20 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     external
     view
     returns (uint256 _neededDependent)
-  {}
+  {
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    return _transformer.calculateNeededToTransformToUnderlying(_dependent, _expectedUnderlying);
+  }
 
   /// @inheritdoc ITransformer
   function calculateNeededToTransformToDependent(address _dependent, uint256 _expectedDependent)
     external
     view
     returns (UnderlyingAmount[] memory _neededUnderlying)
-  {}
+  {
+    ITransformer _transformer = _getTransformerOrFail(_dependent);
+    return _transformer.calculateNeededToTransformToDependent(_dependent, _expectedDependent);
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(

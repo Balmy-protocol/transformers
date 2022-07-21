@@ -210,7 +210,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
         const balance = await ethers.provider.getBalance(transformer.address);
         expect(balance).to.equal(0);
       });
-      then('spent dependent is returned correctly', async () => {
+      then('returns spent dependent correctly', async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         setBalance(transformer.address, AMOUNT_TO_MAP);
         const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
@@ -255,7 +255,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
       then('dependent token is transferred to recipient', () => {
         expect(wToken.transfer).to.have.been.calledOnceWith(RECIPIENT, AMOUNT_TO_MAP);
       });
-      then('spent underlying is returned correctly', async () => {
+      then('returns spent underlying correctly', async () => {
         const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
           value: AMOUNT_TO_MAP,
         });

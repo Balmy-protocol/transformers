@@ -26,7 +26,8 @@ const TOKENS = {
 };
 
 describe('Transformer Registry - Transform All', () => {
-  const INITIAL_SIGNER_BALANCE = utils.parseEther('10');
+  const INITIAL_DEPENDENT_BALANCE = utils.parseEther('10');
+  const INITIAL_UNDERLYING_BALANCE = utils.parseEther('10');
   const RECIPIENT = '0x00000000000000000000000000000000000000FF';
 
   let deployer: SignerWithAddress, signer: SignerWithAddress;
@@ -59,8 +60,8 @@ describe('Transformer Registry - Transform All', () => {
     const underlyingWhale = await wallet.impersonate(TOKENS['cvxCRVCRV'].whale);
     await ethers.provider.send('hardhat_setBalance', [dependentWhale._address, '0xffffffffffffffff']);
     await ethers.provider.send('hardhat_setBalance', [underlyingWhale._address, '0xffffffffffffffff']);
-    await dependent.connect(dependentWhale).transfer(signer.address, INITIAL_SIGNER_BALANCE);
-    await underlying.connect(underlyingWhale).transfer(signer.address, INITIAL_SIGNER_BALANCE);
+    await dependent.connect(dependentWhale).transfer(signer.address, INITIAL_DEPENDENT_BALANCE);
+    await underlying.connect(underlyingWhale).transfer(signer.address, INITIAL_UNDERLYING_BALANCE);
 
     // Take snapshot
     snapshotId = await snapshot.take();
@@ -74,8 +75,8 @@ describe('Transformer Registry - Transform All', () => {
     when('transforming all to underlying', () => {
       let expectedUnderlying: ITransformer.UnderlyingAmountStructOutput[];
       given(async () => {
-        await dependent.connect(signer).approve(registry.address, INITIAL_SIGNER_BALANCE);
-        expectedUnderlying = await registry.calculateTransformToUnderlying(dependent.address, INITIAL_SIGNER_BALANCE);
+        await dependent.connect(signer).approve(registry.address, INITIAL_DEPENDENT_BALANCE);
+        expectedUnderlying = await registry.calculateTransformToUnderlying(dependent.address, INITIAL_DEPENDENT_BALANCE);
         await registry.connect(signer).transformAllToUnderlying(dependent.address, RECIPIENT);
       });
       then('allowance is spent', async () => {
@@ -95,9 +96,9 @@ describe('Transformer Registry - Transform All', () => {
     when('transforming to dependent', () => {
       let expectedDependent: BigNumber;
       given(async () => {
-        await underlying.connect(signer).approve(registry.address, INITIAL_SIGNER_BALANCE);
+        await underlying.connect(signer).approve(registry.address, INITIAL_UNDERLYING_BALANCE);
         expectedDependent = await registry.calculateTransformToDependent(dependent.address, [
-          { underlying: underlying.address, amount: INITIAL_SIGNER_BALANCE },
+          { underlying: underlying.address, amount: INITIAL_UNDERLYING_BALANCE },
         ]);
         await registry.connect(signer).transformAllToDependent(dependent.address, RECIPIENT);
       });

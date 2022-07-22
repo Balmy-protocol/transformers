@@ -74,6 +74,7 @@ interface ITransformerRegistry is ITransformer {
   /**
    * @notice Executes a transformation to the dependent token, by taking the caller's entire
    *         underlying balance. This is meant to be used as part of a multi-hop swap
+   * @dev This function will not work when the underlying token is ETH/MATIC/BNB, since it can't be taken from the caller
    * @param dependent The address of the dependent token
    * @param recipient The address that would receive the dependent tokens
    * @return amountDependent The transformed amount in the dependent token

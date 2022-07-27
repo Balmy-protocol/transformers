@@ -51,7 +51,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _dependent,
     uint256 _amountDependent,
     address _recipient
-  ) external returns (UnderlyingAmount[] memory) {
+  ) external payable returns (UnderlyingAmount[] memory) {
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
     return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
   }
@@ -71,7 +71,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external returns (uint256 _spentDependent) {
+  ) external payable returns (uint256 _spentDependent) {
     _spentDependent = _expectedUnderlying[0].amount;
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
   }

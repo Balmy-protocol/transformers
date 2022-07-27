@@ -4,11 +4,13 @@ pragma solidity >=0.8.7 <0.9.0;
 
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 import '../../interfaces/utils/ICollectableDust.sol';
 import './Governable.sol';
 
 abstract contract CollectableDust is Governable, ICollectableDust {
   using SafeERC20 for IERC20;
+  using Address for address payable;
 
   /// @inheritdoc ICollectableDust
   address public constant PROTOCOL_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -30,7 +32,7 @@ abstract contract CollectableDust is Governable, ICollectableDust {
   ) external onlyGovernor {
     if (_recipient == address(0)) revert DustRecipientIsZeroAddress();
     if (_token == PROTOCOL_TOKEN) {
-      payable(_recipient).transfer(_amount);
+      payable(_recipient).sendValue(_amount);
     } else {
       IERC20(_token).safeTransfer(_recipient, _amount);
     }

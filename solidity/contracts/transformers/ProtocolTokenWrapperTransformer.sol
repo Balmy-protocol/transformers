@@ -4,12 +4,14 @@ pragma solidity >=0.8.7 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for protocol token wrappers (WETH/WBNB/WMATIC)
 contract ProtocolTokenWrapperTransformer is BaseTransformer {
   using SafeERC20 for IERC20;
   using SafeERC20 for IWETH9;
+  using Address for address payable;
 
   constructor(address _governor) Governable(_governor) {}
 
@@ -96,7 +98,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   ) internal {
     _dependent.safeTransferFrom(msg.sender, address(this), _amount);
     _dependent.withdraw(_amount);
-    payable(_recipient).transfer(_amount);
+    payable(_recipient).sendValue(_amount);
   }
 
   // slither-disable-next-line arbitrary-send

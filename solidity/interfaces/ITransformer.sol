@@ -10,6 +10,7 @@ pragma solidity >=0.5.0;
  *           - LP tokens
  *         Now, transformers are smart contract that knows how to map dependent tokens into their underlying counterparts,
  *         and vice-versa. We are doing this so that we can abstract the way tokens can be transformed between each other
+ * @dev All non-view functions were made payable, so that they could be multicalled when msg.value > 0
  */
 interface ITransformer {
   /// @notice An amount of an underlying token
@@ -89,7 +90,7 @@ interface ITransformer {
     address dependent,
     uint256 amountDependent,
     address recipient
-  ) external returns (UnderlyingAmount[] memory);
+  ) external payable returns (UnderlyingAmount[] memory);
 
   /**
    * @notice Executes the transformation to the dependent token
@@ -115,7 +116,7 @@ interface ITransformer {
     address dependent,
     UnderlyingAmount[] calldata expectedUnderlying,
     address recipient
-  ) external returns (uint256 spentDependent);
+  ) external payable returns (uint256 spentDependent);
 
   /**
    * @notice Transforms underlying tokens to an expected amount of dependent tokens

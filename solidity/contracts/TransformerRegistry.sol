@@ -88,7 +88,7 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     address _dependent,
     uint256 _amountDependent,
     address _recipient
-  ) external returns (UnderlyingAmount[] memory) {
+  ) external payable returns (UnderlyingAmount[] memory) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,
@@ -112,7 +112,7 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   }
 
   /// @inheritdoc ITransformerRegistry
-  function transformAllToUnderlying(address _dependent, address _recipient) external returns (UnderlyingAmount[] memory) {
+  function transformAllToUnderlying(address _dependent, address _recipient) external payable returns (UnderlyingAmount[] memory) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     uint256 _amountDependent = IERC20(_dependent).balanceOf(msg.sender);
     bytes memory _result = _delegateToTransformer(
@@ -123,7 +123,7 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   }
 
   /// @inheritdoc ITransformerRegistry
-  function transformAllToDependent(address _dependent, address _recipient) external returns (uint256) {
+  function transformAllToDependent(address _dependent, address _recipient) external payable returns (uint256) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
 
     // Calculate underlying
@@ -147,7 +147,7 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
-  ) external returns (uint256 _spentDependent) {
+  ) external payable returns (uint256 _spentDependent) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,

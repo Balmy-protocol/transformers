@@ -65,19 +65,21 @@ interface ITransformerRegistry is ITransformer {
   /**
    * @notice Executes a transformation to the underlying tokens, by taking the caller's entire
    *         dependent balance. This is meant to be used as part of a multi-hop swap
+   * @dev This function was made payable, so that it could be multicalled when msg.value > 0
    * @param dependent The address of the dependent token
    * @param recipient The address that would receive the underlying tokens
    * @return The transformed amount in each of the underlying tokens
    */
-  function transformAllToUnderlying(address dependent, address recipient) external returns (UnderlyingAmount[] memory);
+  function transformAllToUnderlying(address dependent, address recipient) external payable returns (UnderlyingAmount[] memory);
 
   /**
    * @notice Executes a transformation to the dependent token, by taking the caller's entire
    *         underlying balance. This is meant to be used as part of a multi-hop swap
    * @dev This function will not work when the underlying token is ETH/MATIC/BNB, since it can't be taken from the caller
+   *      This function was made payable, so that it could be multicalled when msg.value > 0
    * @param dependent The address of the dependent token
    * @param recipient The address that would receive the dependent tokens
    * @return amountDependent The transformed amount in the dependent token
    */
-  function transformAllToDependent(address dependent, address recipient) external returns (uint256 amountDependent);
+  function transformAllToDependent(address dependent, address recipient) external payable returns (uint256 amountDependent);
 }

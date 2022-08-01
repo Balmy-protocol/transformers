@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { TransformerRegistry__factory } from '@typechained';
+import { bytecode } from '../artifacts/solidity/contracts/TransformerRegistry.sol/TransformerRegistry.json';
 import { deployThroughDeterministicFactory } from '@mean-finance/deterministic-factory/utils/deployment';
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
@@ -11,7 +11,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     name: 'TransformerRegistry',
     salt: 'MF-Transformer-Registry-V1',
     contract: 'solidity/contracts/TransformerRegistry.sol:TransformerRegistry',
-    bytecode: TransformerRegistry__factory.bytecode,
+    bytecode,
     constructorArgs: {
       types: ['address'],
       values: [governor],

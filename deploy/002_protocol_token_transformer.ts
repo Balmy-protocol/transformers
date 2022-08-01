@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ProtocolTokenWrapperTransformer__factory } from '@typechained';
+import { bytecode } from '../artifacts/solidity/contracts/transformers/ProtocolTokenWrapperTransformer.sol/ProtocolTokenWrapperTransformer.json';
 import { deployThroughDeterministicFactory } from '@mean-finance/deterministic-factory/utils/deployment';
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
@@ -11,7 +11,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     name: 'ProtocolTokenWrapperTransformer',
     salt: 'MF-Protocol-Transformer-V1',
     contract: 'solidity/contracts/transformers/ProtocolTokenWrapperTransformer.sol:ProtocolTokenWrapperTransformer',
-    bytecode: ProtocolTokenWrapperTransformer__factory.bytecode,
+    bytecode,
     constructorArgs: {
       types: ['address'],
       values: [governor],

@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ERC4626Transformer__factory } from '@typechained';
+import { bytecode } from '../artifacts/solidity/contracts/transformers/ERC4626Transformer.sol/ERC4626Transformer.json';
 import { deployThroughDeterministicFactory } from '@mean-finance/deterministic-factory/utils/deployment';
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
@@ -11,7 +11,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     name: 'ERC4626Transformer',
     salt: 'MF-ERC4626-Transformer-V1',
     contract: 'solidity/contracts/transformers/ERC4626Transformer.sol:ERC4626Transformer',
-    bytecode: ERC4626Transformer__factory.bytecode,
+    bytecode,
     constructorArgs: {
       types: ['address'],
       values: [governor],

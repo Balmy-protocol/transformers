@@ -1,17 +1,14 @@
-import { deployments, ethers } from 'hardhat';
+import { deployments, ethers, getNamedAccounts } from 'hardhat';
 import { evm, wallet } from '@utils';
 import { given, then, when } from '@utils/bdd';
 import { expect } from 'chai';
-import { getNodeUrl } from 'utils/env';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IERC20, BaseTransformer, ITransformer, TransformerRegistry } from '@typechained';
 import { BigNumber, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
 import { snapshot } from '@utils/evm';
-import { setTestChainId } from 'utils/deploy';
 
-const CHAIN = { chain: 'ethereum', chainId: 1 };
 const BLOCK_NUMBER = 15014793;
 
 const TOKENS = {
@@ -30,14 +27,14 @@ describe('Transformer Registry - Transform All', () => {
   const INITIAL_UNDERLYING_BALANCE = utils.parseEther('10');
   const RECIPIENT = '0x00000000000000000000000000000000000000FF';
 
-  let deployer: SignerWithAddress, signer: SignerWithAddress;
+  let signer: SignerWithAddress;
   let dependent: IERC20, underlying: IERC20;
   let registry: TransformerRegistry;
   let snapshotId: string;
 
   before(async () => {
-    [deployer, signer] = await ethers.getSigners();
-    await fork({ ...CHAIN, blockNumber: BLOCK_NUMBER });
+    [, signer] = await ethers.getSigners();
+    await fork({ chain: 'ethereum', blockNumber: BLOCK_NUMBER });
 
     // Deploy transformer
     await deployments.fixture(['TransformerRegistry', 'ERC4626Transformer'], { keepExistingDeployments: false });
@@ -116,22 +113,21 @@ describe('Transformer Registry - Transform All', () => {
     });
   });
 
-  const DETERMINISTIC_FACTORY_ADMIN = '0x1a00e1e311009e56e3b0b9ed6f86f5ce128a1c01';
-  const DEPLOYER_ROLE = utils.keccak256(utils.toUtf8Bytes('DEPLOYER_ROLE'));
-  async function fork({ chain, chainId, blockNumber }: { chain: string; chainId: number; blockNumber?: number }): Promise<void> {
+  async function fork({ chain, blockNumber }: { chain: string; blockNumber?: number }): Promise<void> {
     // Set fork of network
     await evm.reset({
-      jsonRpcUrl: getNodeUrl(chain),
+      network: chain,
       blockNumber,
     });
-    setTestChainId(chainId);
+
+    const { deployer, eoaAdmin } = await getNamedAccounts();
     // Give deployer role to our deployer address
-    const admin = await wallet.impersonate(DETERMINISTIC_FACTORY_ADMIN);
+    const admin = await wallet.impersonate(eoaAdmin);
     await wallet.setBalance({ account: admin._address, balance: constants.MaxUint256 });
     const deterministicFactory = await ethers.getContractAt<DeterministicFactory>(
       DeterministicFactory__factory.abi,
       '0xbb681d77506df5CA21D2214ab3923b4C056aa3e2'
     );
-    await deterministicFactory.connect(admin).grantRole(DEPLOYER_ROLE, deployer.address);
+    await deterministicFactory.connect(admin).grantRole(await deterministicFactory.DEPLOYER_ROLE(), deployer);
   }
 });

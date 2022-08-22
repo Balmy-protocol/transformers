@@ -1,5 +1,5 @@
 module.exports = {
-  skipFiles: ['for-test', 'interfaces', 'external', 'mocks'],
+  skipFiles: ['test', 'interfaces'],
   mocha: {
     forbidOnly: true,
     grep: '@skip-on-coverage',

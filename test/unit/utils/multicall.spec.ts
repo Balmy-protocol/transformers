@@ -1,11 +1,13 @@
 import { BigNumber, BytesLike, constants, utils } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { given, then, when } from '../../utils/bdd';
 import { expect } from 'chai';
 import { snapshot } from '@utils/evm';
 import { MulticallMock, MulticallMock__factory } from '@typechained';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { setBalance } from '@utils/wallet';
+import { evm } from '@utils';
 
 describe('Multicall', function () {
   let signer: SignerWithAddress;
@@ -14,6 +16,10 @@ describe('Multicall', function () {
   let snapshotId: string;
 
   before('Setup accounts and contracts', async () => {
+    await network.provider.request({
+      method: 'hardhat_reset',
+      params: [],
+    });
     [signer, recipient1, recipient2, recipient3] = await ethers.getSigners();
     const factory: MulticallMock__factory = await ethers.getContractFactory('solidity/contracts/test/utils/Multicall.sol:MulticallMock');
     multicall = await factory.deploy();

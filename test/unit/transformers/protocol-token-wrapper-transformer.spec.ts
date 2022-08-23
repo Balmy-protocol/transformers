@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { given, then, when } from '@utils/bdd';
 import { ProtocolTokenWrapperTransformer, ProtocolTokenWrapperTransformer__factory, IWETH9, ITransformer } from '@typechained';
 import { snapshot } from '@utils/evm';
@@ -21,6 +21,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   let snapshotId: string;
 
   before('Setup accounts and contracts', async () => {
+    await network.provider.request({
+      method: 'hardhat_reset',
+      params: [],
+    });
     [signer] = await ethers.getSigners();
     wToken = await smock.fake('IWETH9');
     const factory: ProtocolTokenWrapperTransformer__factory = await ethers.getContractFactory(
@@ -117,7 +121,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     when('function is called', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
-        setBalance(transformer.address, AMOUNT_TO_MAP);
+        await setBalance(transformer.address, AMOUNT_TO_MAP);
         await transformer.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT);
       });
       then('wToken is taken from caller', () => {
@@ -193,7 +197,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     when('function is called', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
-        setBalance(transformer.address, AMOUNT_TO_MAP);
+        await setBalance(transformer.address, AMOUNT_TO_MAP);
         await transformer.transformToExpectedUnderlying(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT);
       });
       then('wToken is taken from caller', () => {
@@ -212,7 +216,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
       });
       then('returns spent dependent correctly', async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
-        setBalance(transformer.address, AMOUNT_TO_MAP);
+        await setBalance(transformer.address, AMOUNT_TO_MAP);
         const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
           wToken.address,
           [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }],

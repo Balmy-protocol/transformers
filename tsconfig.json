@@ -5,6 +5,7 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "declaration": true,
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
@@ -19,6 +20,5 @@
       "@eth-sdk-types": ["node_modules/.dethcrypto/eth-sdk-client/cjs/types"]
     }
   },
-  "include": ["./scripts", "./deploy", "./test"],
-  "files": ["./hardhat.config.ts"]
+  "include": ["./typechained"]
 }

@@ -12,7 +12,7 @@
       "@artifacts": ["artifacts/*"],
       "@deploy": ["deploy/*"],
       "@deployments": ["deployments/*"],
-      "@typechained": ["typechained/index"],
+      "@typechained": ["typechained/index"]
     }
   },
   "include": ["./typechained"]

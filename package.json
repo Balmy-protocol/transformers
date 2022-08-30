@@ -65,7 +65,7 @@
     "transpile": "rm -rf dist && npx tsc -p tsconfig.publish.json"
   },
   "lint-staged": {
-    "*.{js,css,md,ts,sol}": "prettier --write",
+    "*.{js,css,md,ts,sol,json}": "prettier --write",
     "*.sol": "cross-env solhint --fix 'contracts/**/*.sol' 'interfaces/**/*.sol'",
     "package.json": "sort-package-json"
   },

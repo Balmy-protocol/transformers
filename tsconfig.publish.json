@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "declaration": true,
+    "declarationMap": true,
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
@@ -15,5 +16,6 @@
       "@typechained": ["typechained/index"]
     }
   },
+  "exclude": ["dist", "node_modules"],
   "include": ["./typechained"]
 }

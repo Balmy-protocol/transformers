@@ -17,7 +17,7 @@ import {
 } from '@typechained';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
-import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
+import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory';
 import { snapshot } from '@utils/evm';
 import { JsonRpcSigner } from '@ethersproject/providers';
 const { makeInterfaceId } = require('@openzeppelin/test-helpers');

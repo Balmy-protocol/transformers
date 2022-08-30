@@ -6,7 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IERC20, BaseTransformer, ITransformer, TransformerRegistry } from '@typechained';
 import { BigNumber, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
-import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory/typechained';
+import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory';
 import { snapshot } from '@utils/evm';
 
 const BLOCK_NUMBER = 15014793;

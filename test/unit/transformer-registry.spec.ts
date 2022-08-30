@@ -16,7 +16,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { behaviours } from '@utils';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { readArgFromEventOrFail } from '@utils/event-utils';
-import { IERC20 } from '@mean-finance/deterministic-factory/typechained';
+import { IERC20 } from '@mean-finance/deterministic-factory';
 const { makeInterfaceId } = require('@openzeppelin/test-helpers');
 
 chai.use(smock.matchers);

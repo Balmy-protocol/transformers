@@ -7,6 +7,7 @@ import { smock, FakeContract } from '@defi-wonderland/smock';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { behaviours } from '@utils';
 
 chai.use(smock.matchers);
 
@@ -76,6 +77,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('calculateTransformToDependent', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateTransformToDependent',
+      input: (underlying) => [wToken.address, underlying],
+    });
     when('function is called', () => {
       let amountDependent: BigNumber;
       given(async () => {
@@ -90,6 +95,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('calculateNeededToTransformToUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateTransformToDependent',
+      input: (underlying) => [wToken.address, underlying],
+    });
     when('function is called', () => {
       let neededDependent: BigNumber;
       given(async () => {
@@ -150,6 +159,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('transformToDependent', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateTransformToDependent',
+      input: (underlying) => [wToken.address, underlying],
+    });
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
       given(() => {
@@ -194,6 +207,10 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('transformToExpectedUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateTransformToDependent',
+      input: (underlying) => [wToken.address, underlying],
+    });
     when('function is called', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
@@ -273,5 +290,29 @@ describe('ProtocolTokenWrapperTransformer', () => {
   async function setBalance(address: string, amount: BigNumberish) {
     const amountToSwapHex = utils.hexStripZeros(BigNumber.from(amount).toHexString());
     await ethers.provider.send('hardhat_setBalance', [address, amountToSwapHex]);
+  }
+
+  function invalidUnderlyingInputTest({ func, input }: { func: string; input: (_: ITransformer.UnderlyingAmountStruct[]) => any[] }) {
+    when('underlying has zero length', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func,
+          args: input([]),
+          message: `InvalidUnderlyingInput`,
+        });
+      });
+    });
+    when('underlying has two elements', () => {
+      then('tx reverts with message', async () => {
+        const element = { underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP };
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func,
+          args: input([element, element]),
+          message: `InvalidUnderlyingInput`,
+        });
+      });
+    });
   }
 });

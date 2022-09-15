@@ -22,6 +22,12 @@ interface ITransformer {
   /// @notice Thrown when the underlying input is not valid for the used transformer
   error InvalidUnderlyingInput();
 
+  /// @notice Thrown when the transformation provides less output than expected
+  error ReceivedLessThanExpected(uint256 received);
+
+  /// @notice Thrown when the transformation needs more input than expected
+  error NeededMoreThanExpected(uint256 needed);
+
   /**
    * @notice Returns the addresses of all the underlying tokens, for the given dependent
    * @dev This function must be unaware of context. The returned values must be the same,

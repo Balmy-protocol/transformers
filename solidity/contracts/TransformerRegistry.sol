@@ -87,12 +87,13 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _minAmountOut
   ) external payable returns (UnderlyingAmount[] memory) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient)
+      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient, _minAmountOut)
     );
     return abi.decode(_result, (UnderlyingAmount[]));
   }
@@ -101,29 +102,38 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   function transformToDependent(
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
-    address _recipient
+    address _recipient,
+    uint256 _minAmountOut
   ) external payable returns (uint256 _amountDependent) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToDependent.selector, _dependent, _underlying, _recipient)
+      abi.encodeWithSelector(_transformer.transformToDependent.selector, _dependent, _underlying, _recipient, _minAmountOut)
     );
     return abi.decode(_result, (uint256));
   }
 
   /// @inheritdoc ITransformerRegistry
-  function transformAllToUnderlying(address _dependent, address _recipient) external payable returns (UnderlyingAmount[] memory) {
+  function transformAllToUnderlying(
+    address _dependent,
+    address _recipient,
+    UnderlyingAmount[] memory _minAmountOut
+  ) external payable returns (UnderlyingAmount[] memory) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     uint256 _amountDependent = IERC20(_dependent).balanceOf(msg.sender);
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient)
+      abi.encodeWithSelector(_transformer.transformToUnderlying.selector, _dependent, _amountDependent, _recipient, _minAmountOut)
     );
     return abi.decode(_result, (UnderlyingAmount[]));
   }
 
   /// @inheritdoc ITransformerRegistry
-  function transformAllToDependent(address _dependent, address _recipient) external payable returns (uint256) {
+  function transformAllToDependent(
+    address _dependent,
+    address _recipient,
+    uint256 _minAmountOut
+  ) external payable returns (uint256) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
 
     // Calculate underlying
@@ -138,7 +148,7 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     // Delegate
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToDependent.selector, _dependent, _underlyingAmount, _recipient)
+      abi.encodeWithSelector(_transformer.transformToDependent.selector, _dependent, _underlyingAmount, _recipient, _minAmountOut)
     );
     return abi.decode(_result, (uint256));
   }
@@ -147,12 +157,13 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   function transformToExpectedUnderlying(
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
-    address _recipient
+    address _recipient,
+    uint256 _maxAmountIn
   ) external payable returns (uint256 _spentDependent) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToExpectedUnderlying.selector, _dependent, _expectedUnderlying, _recipient)
+      abi.encodeWithSelector(_transformer.transformToExpectedUnderlying.selector, _dependent, _expectedUnderlying, _recipient, _maxAmountIn)
     );
     return abi.decode(_result, (uint256));
   }
@@ -161,12 +172,13 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
     ITransformer _transformer = _getTransformerOrFail(_dependent);
     bytes memory _result = _delegateToTransformer(
       _transformer,
-      abi.encodeWithSelector(_transformer.transformToExpectedDependent.selector, _dependent, _expectedDependent, _recipient)
+      abi.encodeWithSelector(_transformer.transformToExpectedDependent.selector, _dependent, _expectedDependent, _recipient, _maxAmountIn)
     );
     return abi.decode(_result, (UnderlyingAmount[]));
   }

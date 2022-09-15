@@ -14,6 +14,7 @@ chai.use(smock.matchers);
 describe('ProtocolTokenWrapperTransformer', () => {
   const PROTOCOL_TOKEN = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
   const AMOUNT_TO_MAP = 100000;
+  const UNDERLYING = [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }];
   const RECIPIENT = '0x000000000000000000000000000000000000000F';
 
   let signer: SignerWithAddress;
@@ -131,7 +132,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         await setBalance(transformer.address, AMOUNT_TO_MAP);
-        await transformer.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT);
+        await transformer.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT, UNDERLYING);
       });
       then('wToken is taken from caller', () => {
         expect(wToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_TO_MAP);
@@ -150,7 +151,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
       then('underlying amount is returned correctly', async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         setBalance(transformer.address, AMOUNT_TO_MAP);
-        const underlying = await transformer.callStatic.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT);
+        const underlying = await transformer.callStatic.transformToUnderlying(wToken.address, AMOUNT_TO_MAP, RECIPIENT, UNDERLYING);
         expect(underlying.length).to.equal(1);
         expect(underlying[0].amount).to.equal(AMOUNT_TO_MAP);
         expect(underlying[0].underlying).to.equal(PROTOCOL_TOKEN);
@@ -161,12 +162,12 @@ describe('ProtocolTokenWrapperTransformer', () => {
   describe('transformToDependent', () => {
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
-      input: (underlying) => [wToken.address, underlying, RECIPIENT],
+      input: (underlying) => [wToken.address, underlying, RECIPIENT, AMOUNT_TO_MAP],
     });
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
       given(() => {
-        tx = transformer.transformToDependent(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, {
+        tx = transformer.transformToDependent(wToken.address, UNDERLYING, RECIPIENT, AMOUNT_TO_MAP, {
           value: AMOUNT_TO_MAP - 1,
         });
       });
@@ -176,7 +177,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     });
     when('function is called correctly', () => {
       given(async () => {
-        await transformer.transformToDependent(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, {
+        await transformer.transformToDependent(wToken.address, UNDERLYING, RECIPIENT, AMOUNT_TO_MAP, {
           value: AMOUNT_TO_MAP,
         });
       });
@@ -195,12 +196,9 @@ describe('ProtocolTokenWrapperTransformer', () => {
         expect(wToken.transfer).to.have.been.calledOnceWith(RECIPIENT, AMOUNT_TO_MAP);
       });
       then('dependent amount is returned correctly', async () => {
-        const amountDependent = await transformer.callStatic.transformToDependent(
-          wToken.address,
-          [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }],
-          RECIPIENT,
-          { value: AMOUNT_TO_MAP }
-        );
+        const amountDependent = await transformer.callStatic.transformToDependent(wToken.address, UNDERLYING, RECIPIENT, AMOUNT_TO_MAP, {
+          value: AMOUNT_TO_MAP,
+        });
         expect(amountDependent).to.equal(AMOUNT_TO_MAP);
       });
     });
@@ -209,13 +207,13 @@ describe('ProtocolTokenWrapperTransformer', () => {
   describe('transformToExpectedUnderlying', () => {
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
-      input: (underlying) => [wToken.address, underlying, RECIPIENT],
+      input: (underlying) => [wToken.address, underlying, RECIPIENT, AMOUNT_TO_MAP],
     });
     when('function is called', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         await setBalance(transformer.address, AMOUNT_TO_MAP);
-        await transformer.transformToExpectedUnderlying(wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT);
+        await transformer.transformToExpectedUnderlying(wToken.address, UNDERLYING, RECIPIENT, AMOUNT_TO_MAP);
       });
       then('wToken is taken from caller', () => {
         expect(wToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_TO_MAP);
@@ -234,11 +232,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
       then('returns spent dependent correctly', async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
         await setBalance(transformer.address, AMOUNT_TO_MAP);
-        const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
-          wToken.address,
-          [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }],
-          RECIPIENT
-        );
+        const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(wToken.address, UNDERLYING, RECIPIENT, AMOUNT_TO_MAP);
         expect(spentDependent).to.equal(AMOUNT_TO_MAP);
       });
     });
@@ -248,7 +242,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
       given(() => {
-        tx = transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+        tx = transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, UNDERLYING, {
           value: AMOUNT_TO_MAP - 1,
         });
       });
@@ -258,7 +252,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     });
     when('function is called correctly', () => {
       given(async () => {
-        await transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+        await transformer.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, UNDERLYING, {
           value: AMOUNT_TO_MAP,
         });
       });
@@ -277,7 +271,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
         expect(wToken.transfer).to.have.been.calledOnceWith(RECIPIENT, AMOUNT_TO_MAP);
       });
       then('returns spent underlying correctly', async () => {
-        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, {
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(wToken.address, AMOUNT_TO_MAP, RECIPIENT, UNDERLYING, {
           value: AMOUNT_TO_MAP,
         });
         expect(spentUnderlying.length).to.equal(1);

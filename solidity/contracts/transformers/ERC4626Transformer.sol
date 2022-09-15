@@ -60,7 +60,8 @@ contract ERC4626Transformer is BaseTransformer {
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _minAmountOut
   ) external payable returns (UnderlyingAmount[] memory) {
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
@@ -71,7 +72,8 @@ contract ERC4626Transformer is BaseTransformer {
   function transformToDependent(
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
-    address _recipient
+    address _recipient,
+    uint256 _minAmountOut
   ) external payable returns (uint256 _amountDependent) {
     if (_underlying.length != 1) revert InvalidUnderlyingInput();
     IERC20 _underlyingToken = IERC20(_underlying[0].underlying);
@@ -86,7 +88,8 @@ contract ERC4626Transformer is BaseTransformer {
   function transformToExpectedUnderlying(
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
-    address _recipient
+    address _recipient,
+    uint256 _maxAmountIn
   ) external payable returns (uint256 _spentDependent) {
     if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = IERC4626(_dependent).withdraw(_expectedUnderlying[0].amount, _recipient, msg.sender);
@@ -96,7 +99,8 @@ contract ERC4626Transformer is BaseTransformer {
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory) {
     // Check how much underlying would be needed to mint the vault tokens
     uint256 _neededUnderlying = IERC4626(_dependent).previewMint(_expectedDependent);

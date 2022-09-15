@@ -96,7 +96,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
 
   describe('calculateNeededToTransformToUnderlying', () => {
     invalidUnderlyingInputTest({
-      func: 'calculateTransformToDependent',
+      func: 'calculateNeededToTransformToUnderlying',
       input: (underlying) => [wToken.address, underlying],
     });
     when('function is called', () => {
@@ -160,7 +160,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
 
   describe('transformToDependent', () => {
     invalidUnderlyingInputTest({
-      func: 'calculateTransformToDependent',
+      func: 'transformToDependent',
       input: (underlying) => [wToken.address, underlying],
     });
     when('sending less in value than specified as parameter', () => {
@@ -208,7 +208,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
 
   describe('transformToExpectedUnderlying', () => {
     invalidUnderlyingInputTest({
-      func: 'calculateTransformToDependent',
+      func: 'transformToExpectedUnderlying',
       input: (underlying) => [wToken.address, underlying],
     });
     when('function is called', () => {

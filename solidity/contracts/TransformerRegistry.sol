@@ -131,7 +131,8 @@ contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
     UnderlyingAmount[] memory _underlyingAmount = new UnderlyingAmount[](_underlying.length);
     for (uint256 i; i < _underlying.length; i++) {
       address _underlyingToken = _underlying[i];
-      _underlyingAmount[i] = UnderlyingAmount({underlying: _underlyingToken, amount: IERC20(_underlyingToken).balanceOf(msg.sender)});
+      uint256 _balance = _underlyingToken == PROTOCOL_TOKEN ? address(this).balance : IERC20(_underlyingToken).balanceOf(msg.sender);
+      _underlyingAmount[i] = UnderlyingAmount({underlying: _underlyingToken, amount: _balance});
     }
 
     // Delegate

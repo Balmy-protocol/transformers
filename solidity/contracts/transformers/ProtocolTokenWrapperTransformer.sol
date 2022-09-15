@@ -17,12 +17,12 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
 
   /// @inheritdoc ITransformer
   function getUnderlying(address) external pure returns (address[] memory) {
-    return _toUnderlying(PROTOCOL_TOKEN);
+    return _toSingletonArray(PROTOCOL_TOKEN);
   }
 
   /// @inheritdoc ITransformer
   function calculateTransformToUnderlying(address, uint256 _amountDependent) external pure returns (UnderlyingAmount[] memory) {
-    return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
+    return _toSingletonArray(PROTOCOL_TOKEN, _amountDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -45,7 +45,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     pure
     returns (UnderlyingAmount[] memory _neededUnderlying)
   {
-    return _toUnderylingAmount(PROTOCOL_TOKEN, _expectedDependent);
+    return _toSingletonArray(PROTOCOL_TOKEN, _expectedDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -55,7 +55,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient
   ) external payable returns (UnderlyingAmount[] memory) {
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
-    return _toUnderylingAmount(PROTOCOL_TOKEN, _amountDependent);
+    return _toSingletonArray(PROTOCOL_TOKEN, _amountDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -85,7 +85,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient
   ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
     _wrapAndTransfer(IWETH9(_dependent), _expectedDependent, _recipient);
-    return _toUnderylingAmount(PROTOCOL_TOKEN, _expectedDependent);
+    return _toSingletonArray(PROTOCOL_TOKEN, _expectedDependent);
   }
 
   receive() external payable {}
@@ -111,12 +111,12 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     _dependent.safeTransfer(_recipient, _amount);
   }
 
-  function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
+  function _toSingletonArray(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);
     _underlyingArray[0] = _underlying;
   }
 
-  function _toUnderylingAmount(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
+  function _toSingletonArray(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
     _amounts = new UnderlyingAmount[](1);
     _amounts[0] = UnderlyingAmount({underlying: _underlying, amount: _amount});
   }

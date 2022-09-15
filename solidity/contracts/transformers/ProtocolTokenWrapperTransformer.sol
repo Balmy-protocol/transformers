@@ -57,6 +57,9 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _minAmountOut
   ) external payable returns (UnderlyingAmount[] memory) {
+    if (_minAmountOut.length != 1) revert InvalidUnderlyingInput();
+    // Since dependent & underlying are 1:1, we can preemptively check if received less than expected
+    if (_minAmountOut[0].amount > _amountDependent) revert ReceivedLessThanExpected(_amountDependent);
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
     return _toSingletonArray(PROTOCOL_TOKEN, _amountDependent);
   }
@@ -70,6 +73,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   ) external payable returns (uint256 _amountDependent) {
     if (_underlying.length != 1) revert InvalidUnderlyingInput();
     _amountDependent = _underlying[0].amount;
+    // Since dependent & underlying are 1:1, we can preemptively check if received less than expected
+    if (_minAmountOut > _amountDependent) revert ReceivedLessThanExpected(_amountDependent);
     _wrapAndTransfer(IWETH9(_dependent), _amountDependent, _recipient);
   }
 
@@ -82,6 +87,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   ) external payable returns (uint256 _spentDependent) {
     if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = _expectedUnderlying[0].amount;
+    // Since dependent & underlying are 1:1, we can preemptively check if needed more than expected
+    if (_maxAmountIn < _spentDependent) revert NeededMoreThanExpected(_spentDependent);
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
   }
 
@@ -92,6 +99,9 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
+    if (_maxAmountIn.length != 1) revert InvalidUnderlyingInput();
+    // Since dependent & underlying are 1:1, we can preemptively check if needed more than expected
+    if (_maxAmountIn[0].amount < _expectedDependent) revert NeededMoreThanExpected(_expectedDependent);
     _wrapAndTransfer(IWETH9(_dependent), _expectedDependent, _recipient);
     return _toSingletonArray(PROTOCOL_TOKEN, _expectedDependent);
   }

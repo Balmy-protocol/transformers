@@ -128,6 +128,20 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('transformToUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'transformToUnderlying',
+      input: (underlying) => [wToken.address, AMOUNT_TO_MAP, RECIPIENT, underlying],
+    });
+    when('asking for more than received', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToUnderlying',
+          args: [wToken.address, AMOUNT_TO_MAP, RECIPIENT, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP + 1 }]],
+          message: `ReceivedLessThanExpected(${AMOUNT_TO_MAP})`,
+        });
+      });
+    });
     when('function is called', () => {
       given(async () => {
         // We are setting balance to the transformer, to simulate a withdraw from the wToken
@@ -163,6 +177,16 @@ describe('ProtocolTokenWrapperTransformer', () => {
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
       input: (underlying) => [wToken.address, underlying, RECIPIENT, AMOUNT_TO_MAP],
+    });
+    when('asking for more than received', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToDependent',
+          args: [wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, AMOUNT_TO_MAP + 1],
+          message: `ReceivedLessThanExpected(${AMOUNT_TO_MAP})`,
+        });
+      });
     });
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
@@ -205,6 +229,16 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('transformToExpectedUnderlying', () => {
+    when('asking for less than needed', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedUnderlying',
+          args: [wToken.address, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP }], RECIPIENT, AMOUNT_TO_MAP - 1],
+          message: `NeededMoreThanExpected(${AMOUNT_TO_MAP})`,
+        });
+      });
+    });
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
       input: (underlying) => [wToken.address, underlying, RECIPIENT, AMOUNT_TO_MAP],
@@ -239,6 +273,20 @@ describe('ProtocolTokenWrapperTransformer', () => {
   });
 
   describe('transformToExpectedDependent', () => {
+    invalidUnderlyingInputTest({
+      func: 'transformToExpectedDependent',
+      input: (underlying) => [wToken.address, AMOUNT_TO_MAP, RECIPIENT, underlying],
+    });
+    when('asking for less than needed', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedDependent',
+          args: [wToken.address, AMOUNT_TO_MAP, RECIPIENT, [{ underlying: PROTOCOL_TOKEN, amount: AMOUNT_TO_MAP - 1 }]],
+          message: `NeededMoreThanExpected(${AMOUNT_TO_MAP})`,
+        });
+      });
+    });
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
       given(() => {

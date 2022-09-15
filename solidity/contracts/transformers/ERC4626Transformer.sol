@@ -121,6 +121,7 @@ contract ERC4626Transformer is BaseTransformer {
       unchecked {
         _underlying.safeTransfer(msg.sender, _neededUnderlying - _spentUnderlying);
       }
+      _underlying.approve(_dependent, 0);
     }
     return _toSingletonArray(address(_underlying), _spentUnderlying);
   }

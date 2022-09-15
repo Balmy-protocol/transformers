@@ -190,7 +190,7 @@ describe('ERC4626Transformer', () => {
 
   describe('transformToExpectedUnderlying', () => {
     invalidUnderlyingInputTest({
-      func: 'transformToDependent',
+      func: 'transformToExpectedUnderlying',
       input: (underlying) => [vault.address, underlying, recipient.address],
     });
     when('function is called', () => {

@@ -161,7 +161,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
   describe('transformToDependent', () => {
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
-      input: (underlying) => [wToken.address, underlying],
+      input: (underlying) => [wToken.address, underlying, RECIPIENT],
     });
     when('sending less in value than specified as parameter', () => {
       let tx: Promise<TransactionResponse>;
@@ -209,7 +209,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
   describe('transformToExpectedUnderlying', () => {
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
-      input: (underlying) => [wToken.address, underlying],
+      input: (underlying) => [wToken.address, underlying, RECIPIENT],
     });
     when('function is called', () => {
       given(async () => {

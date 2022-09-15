@@ -40,6 +40,7 @@ describe('ERC4626Transformer', () => {
     vault.redeem.reset();
     vault.deposit.reset();
     vault.mint.reset();
+    vault.withdraw.reset();
     underlyingToken.transferFrom.reset();
     underlyingToken.approve.reset();
     underlyingToken.transfer.reset();
@@ -137,9 +138,25 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToUnderlying', () => {
+    given(() => {
+      vault.redeem.returns(AMOUNT_UNDERLYING);
+    });
+    invalidUnderlyingInputTest({
+      func: 'transformToUnderlying',
+      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying],
+    });
+    when('asking for more than received', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToUnderlying',
+          args: [vault.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING + 1 }]],
+          message: `ReceivedLessThanExpected(${AMOUNT_UNDERLYING})`,
+        });
+      });
+    });
     when('function is called', () => {
       given(async () => {
-        vault.redeem.returns(AMOUNT_UNDERLYING);
         await transformer.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address, [
           { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
         ]);
@@ -159,13 +176,25 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToDependent', () => {
+    given(() => {
+      vault.deposit.returns(AMOUNT_DEPENDENT);
+    });
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
       input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
     });
+    when('asking for more than received', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToDependent',
+          args: [vault.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }], recipient.address, AMOUNT_DEPENDENT + 1],
+          message: `ReceivedLessThanExpected(${AMOUNT_DEPENDENT})`,
+        });
+      });
+    });
     when('function is called', () => {
       given(async () => {
-        vault.deposit.returns(AMOUNT_DEPENDENT);
         await transformer.transformToDependent(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
@@ -195,13 +224,25 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToExpectedUnderlying', () => {
+    given(() => {
+      vault.withdraw.returns(AMOUNT_DEPENDENT);
+    });
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
       input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
     });
+    when('asking for less than needed', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedUnderlying',
+          args: [vault.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }], recipient.address, AMOUNT_DEPENDENT - 1],
+          message: `NeededMoreThanExpected(${AMOUNT_DEPENDENT})`,
+        });
+      });
+    });
     when('function is called', () => {
       given(async () => {
-        vault.withdraw.returns(AMOUNT_DEPENDENT);
         await transformer.transformToExpectedUnderlying(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
@@ -225,10 +266,26 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToExpectedDependent', () => {
+    given(() => {
+      vault.previewMint.returns(AMOUNT_UNDERLYING);
+      vault.mint.returns(AMOUNT_UNDERLYING);
+    });
+    invalidUnderlyingInputTest({
+      func: 'transformToExpectedDependent',
+      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying],
+    });
+    when('asking for less than needed', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedDependent',
+          args: [vault.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING - 1 }]],
+          message: `NeededMoreThanExpected(${AMOUNT_UNDERLYING})`,
+        });
+      });
+    });
     when('preview matches mint', () => {
       given(async () => {
-        vault.previewMint.returns(AMOUNT_UNDERLYING);
-        vault.mint.returns(AMOUNT_UNDERLYING);
         await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
           { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
         ]);

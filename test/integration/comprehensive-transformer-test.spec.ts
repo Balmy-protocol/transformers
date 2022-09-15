@@ -239,7 +239,7 @@ describe('Comprehensive Transformer Test', () => {
           given(async () => {
             await dependent.connect(signer).approve(transformer.address, AMOUNT_DEPENDENT);
             expectedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, AMOUNT_DEPENDENT);
-            await transformer.connect(signer).transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, RECIPIENT);
+            await transformer.connect(signer).transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, expectedUnderlying);
           });
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
@@ -269,7 +269,7 @@ describe('Comprehensive Transformer Test', () => {
               await underlyingToken.connect(signer).approve(transformer.address, AMOUNT_PER_UNDERLYING);
             }
             expectedDependent = await transformer.calculateTransformToDependent(dependent.address, input);
-            const tx = await transformer.connect(signer).transformToDependent(dependent.address, input, RECIPIENT, { value });
+            const tx = await transformer.connect(signer).transformToDependent(dependent.address, input, RECIPIENT, expectedDependent, { value });
             const { gasUsed, effectiveGasPrice } = await tx.wait();
             gasSpent = gasUsed.mul(effectiveGasPrice);
           });
@@ -302,7 +302,7 @@ describe('Comprehensive Transformer Test', () => {
             const input = underlying.map((token) => ({ underlying: token.address, amount: AMOUNT_PER_UNDERLYING }));
             neededDependent = await transformer.calculateNeededToTransformToUnderlying(dependent.address, input);
             await dependent.connect(signer).approve(transformer.address, neededDependent);
-            await transformer.connect(signer).transformToExpectedUnderlying(dependent.address, input, RECIPIENT);
+            await transformer.connect(signer).transformToExpectedUnderlying(dependent.address, input, RECIPIENT, neededDependent);
           });
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
@@ -331,7 +331,9 @@ describe('Comprehensive Transformer Test', () => {
               await underlyingToken.connect(signer).approve(transformer.address, amount);
             }
             const value = isTokenUnderyling(PROTOCOL_TOKEN) ? neededUnderlying[0].amount : constants.Zero;
-            const tx = await transformer.connect(signer).transformToExpectedDependent(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, { value });
+            const tx = await transformer
+              .connect(signer)
+              .transformToExpectedDependent(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, neededUnderlying, { value });
             const { gasUsed, effectiveGasPrice } = await tx.wait();
             gasSpent = gasUsed.mul(effectiveGasPrice);
           });

@@ -87,12 +87,16 @@ interface ITransformer {
    * @param dependent The address of the dependent token
    * @param amountDependent The amount to transform
    * @param recipient The address that would receive the underlying tokens
+   * @param minAmountOut The minimum amount of underlying that the caller expects to get. Will fail
+   *                     if less is received. As a general rule, the underlying tokens should
+   *                     be provided in the same order as `getUnderlying` returns them
    * @return The transformed amount in each of the underlying tokens
    */
   function transformToUnderlying(
     address dependent,
     uint256 amountDependent,
-    address recipient
+    address recipient,
+    UnderlyingAmount[] calldata minAmountOut
   ) external payable returns (UnderlyingAmount[] memory);
 
   /**
@@ -100,12 +104,15 @@ interface ITransformer {
    * @param dependent The address of the dependent token
    * @param underlying The amounts of underlying tokens to transform
    * @param recipient The address that would receive the dependent tokens
+   * @param minAmountOut The minimum amount of dependent that the caller expects to get. Will fail
+   *                     if less is received
    * @return amountDependent The transformed amount in the dependent token
    */
   function transformToDependent(
     address dependent,
     UnderlyingAmount[] calldata underlying,
-    address recipient
+    address recipient,
+    uint256 minAmountOut
   ) external payable returns (uint256 amountDependent);
 
   /**
@@ -113,12 +120,15 @@ interface ITransformer {
    * @param dependent The address of the dependent token
    * @param expectedUnderlying The expected amounts of underlying tokens
    * @param recipient The address that would receive the underlying tokens
+   * @param maxAmountIn The maximum amount of dependent that the caller is willing to spend.
+   *                    Will fail more is needed
    * @return spentDependent The amount of spent dependent tokens
    */
   function transformToExpectedUnderlying(
     address dependent,
     UnderlyingAmount[] calldata expectedUnderlying,
-    address recipient
+    address recipient,
+    uint256 maxAmountIn
   ) external payable returns (uint256 spentDependent);
 
   /**
@@ -126,11 +136,15 @@ interface ITransformer {
    * @param dependent The address of the dependent token
    * @param expectedDependent The expected amounts of dependent tokens
    * @param recipient The address that would receive the underlying tokens
+   * @param maxAmountIn The maximum amount of underlying that the caller is willing to spend.
+   *                    Will fail more is needed. As a general rule, the underlying tokens should
+   *                    be provided in the same order as `getUnderlying` returns them
    * @return spentUnderlying The amount of spent underlying tokens
    */
   function transformToExpectedDependent(
     address dependent,
     uint256 expectedDependent,
-    address recipient
+    address recipient,
+    UnderlyingAmount[] calldata maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory spentUnderlying);
 }

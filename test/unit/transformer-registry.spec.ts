@@ -169,13 +169,21 @@ describe('TransformerRegistry', () => {
 
   delegateTest({
     method: 'transformToUnderlying',
-    args: () => [dependent.address, DEPENDENT_AMOUNT, RECIPIENT],
+    args: () => [dependent.address, DEPENDENT_AMOUNT, RECIPIENT, UNDERLYING_AMOUNT],
     returns: UNDERLYING_AMOUNT as any,
+    specialArgAssertion: (args) => {
+      expect(args[0]).to.equal(dependent.address);
+      expect(args[1]).to.equal(DEPENDENT_AMOUNT);
+      expect(args[2]).to.equal(RECIPIENT);
+      expect(args[3]).to.have.lengthOf(1);
+      expect(args[3][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+      expect(args[3][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+    },
   });
 
   delegateTest({
     method: 'transformToDependent',
-    args: () => [dependent.address, UNDERLYING_AMOUNT, RECIPIENT],
+    args: () => [dependent.address, UNDERLYING_AMOUNT, RECIPIENT, DEPENDENT_AMOUNT],
     returns: DEPENDENT_AMOUNT,
     specialArgAssertion: (args) => {
       expect(args[0]).to.equal(dependent.address);
@@ -183,35 +191,41 @@ describe('TransformerRegistry', () => {
       expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
       expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
       expect(args[2]).to.equal(RECIPIENT);
+      expect(args[3]).to.equal(DEPENDENT_AMOUNT);
     },
   });
 
   describe('transformAllToUnderlying', () => {
-    assertFailsWithUnknownDependent('transformAllToUnderlying', () => [dependent.address, RECIPIENT]);
+    assertFailsWithUnknownDependent('transformAllToUnderlying', () => [dependent.address, RECIPIENT, UNDERLYING_AMOUNT]);
     when('dependent is registered', () => {
       given(async () => {
         await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [dependent.address] }]);
         transformer.transformToUnderlying.returns(UNDERLYING_AMOUNT);
         dependent.balanceOf.returns(DEPENDENT_AMOUNT);
-        await registry.transformAllToUnderlying(dependent.address, RECIPIENT);
+        await registry.transformAllToUnderlying(dependent.address, RECIPIENT, UNDERLYING_AMOUNT);
       });
       then('balance of is called correctly', async () => {
         expect(dependent.balanceOf).to.have.been.calledOnceWith(signer.address);
       });
       then('delegation worked as expected', async () => {
-        expect(transformer.transformToUnderlying)
-          .to.have.been.calledOnceWith(dependent.address, DEPENDENT_AMOUNT, RECIPIENT)
-          .delegatedFrom(registry.address);
+        expect(transformer.transformToUnderlying).to.have.been.calledOnce.delegatedFrom(registry.address);
+        const args = transformer.transformToUnderlying.getCall(0).args as any[];
+        expect(args[0]).to.equal(dependent.address);
+        expect(args[1]).to.equal(DEPENDENT_AMOUNT);
+        expect(args[2]).to.equal(RECIPIENT);
+        expect(args[3]).to.have.lengthOf(1);
+        expect(args[3][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+        expect(args[3][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
       });
       then('return value from transformer is returned through registry', async () => {
-        const result = await registry.callStatic.transformAllToUnderlying(dependent.address, RECIPIENT);
+        const result = await registry.callStatic.transformAllToUnderlying(dependent.address, RECIPIENT, UNDERLYING_AMOUNT);
         expectObjectToBeTheSame(result, UNDERLYING_AMOUNT);
       });
     });
   });
 
   describe('transformAllToDependent', () => {
-    assertFailsWithUnknownDependent('transformAllToDependent', () => [dependent.address, RECIPIENT]);
+    assertFailsWithUnknownDependent('transformAllToDependent', () => [dependent.address, RECIPIENT, DEPENDENT_AMOUNT]);
     when('dependent is registered', () => {
       const UNDERLYING_AMOUNT = BigNumber.from(123456);
       let underlyingToken: FakeContract<IERC20>;
@@ -221,7 +235,7 @@ describe('TransformerRegistry', () => {
         transformer.getUnderlying.returns([underlyingToken.address]);
         transformer.transformToDependent.returns(DEPENDENT_AMOUNT);
         underlyingToken.balanceOf.returns(UNDERLYING_AMOUNT);
-        await registry.transformAllToDependent(dependent.address, RECIPIENT);
+        await registry.transformAllToDependent(dependent.address, RECIPIENT, DEPENDENT_AMOUNT);
       });
       then('balance of is called correctly', async () => {
         expect(underlyingToken.balanceOf).to.have.been.calledOnceWith(signer.address);
@@ -234,9 +248,10 @@ describe('TransformerRegistry', () => {
         expect(args[1][0].underlying).to.equal(underlyingToken.address);
         expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT);
         expect(args[2]).to.equal(RECIPIENT);
+        expect(args[3]).to.equal(DEPENDENT_AMOUNT);
       });
       then('return value from transformer is returned through registry', async () => {
-        const result = await registry.callStatic.transformAllToDependent(dependent.address, RECIPIENT);
+        const result = await registry.callStatic.transformAllToDependent(dependent.address, RECIPIENT, DEPENDENT_AMOUNT);
         expect(result).to.equal(DEPENDENT_AMOUNT);
       });
     });
@@ -244,7 +259,7 @@ describe('TransformerRegistry', () => {
 
   delegateTest({
     method: 'transformToExpectedUnderlying',
-    args: () => [dependent.address, UNDERLYING_AMOUNT, RECIPIENT],
+    args: () => [dependent.address, UNDERLYING_AMOUNT, RECIPIENT, DEPENDENT_AMOUNT],
     returns: DEPENDENT_AMOUNT,
     specialArgAssertion: (args) => {
       expect(args[0]).to.equal(dependent.address);
@@ -252,13 +267,22 @@ describe('TransformerRegistry', () => {
       expect(args[1][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
       expect(args[1][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
       expect(args[2]).to.equal(RECIPIENT);
+      expect(args[3]).to.equal(DEPENDENT_AMOUNT);
     },
   });
 
   delegateTest({
     method: 'transformToExpectedDependent',
-    args: () => [dependent.address, DEPENDENT_AMOUNT, RECIPIENT],
+    args: () => [dependent.address, DEPENDENT_AMOUNT, RECIPIENT, UNDERLYING_AMOUNT],
     returns: UNDERLYING_AMOUNT as any,
+    specialArgAssertion: (args) => {
+      expect(args[0]).to.equal(dependent.address);
+      expect(args[1]).to.equal(DEPENDENT_AMOUNT);
+      expect(args[2]).to.equal(RECIPIENT);
+      expect(args[3]).to.have.lengthOf(1);
+      expect(args[3][0].underlying).to.equal(UNDERLYING_AMOUNT[0].underlying);
+      expect(args[3][0].amount).to.equal(UNDERLYING_AMOUNT[0].amount);
+    },
   });
 
   function delegateViewTest<Method extends keyof Functions>({

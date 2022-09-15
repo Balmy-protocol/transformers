@@ -54,7 +54,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   function transformToUnderlying(
     address _dependent,
     uint256 _amountDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _minAmountOut
   ) external payable returns (UnderlyingAmount[] memory) {
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _amountDependent, _recipient);
     return _toSingletonArray(PROTOCOL_TOKEN, _amountDependent);
@@ -64,7 +65,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   function transformToDependent(
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
-    address _recipient
+    address _recipient,
+    uint256 _minAmountOut
   ) external payable returns (uint256 _amountDependent) {
     if (_underlying.length != 1) revert InvalidUnderlyingInput();
     _amountDependent = _underlying[0].amount;
@@ -75,7 +77,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   function transformToExpectedUnderlying(
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
-    address _recipient
+    address _recipient,
+    uint256 _maxAmountIn
   ) external payable returns (uint256 _spentDependent) {
     if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = _expectedUnderlying[0].amount;
@@ -86,7 +89,8 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   function transformToExpectedDependent(
     address _dependent,
     uint256 _expectedDependent,
-    address _recipient
+    address _recipient,
+    UnderlyingAmount[] calldata _maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory _spentUnderlying) {
     _wrapAndTransfer(IWETH9(_dependent), _expectedDependent, _recipient);
     return _toSingletonArray(PROTOCOL_TOKEN, _expectedDependent);

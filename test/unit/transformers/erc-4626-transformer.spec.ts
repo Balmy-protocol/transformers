@@ -140,13 +140,17 @@ describe('ERC4626Transformer', () => {
     when('function is called', () => {
       given(async () => {
         vault.redeem.returns(AMOUNT_UNDERLYING);
-        await transformer.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        await transformer.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
       });
       then('vault is called correctly', () => {
         expect(vault.redeem).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address, signer.address);
       });
       then('underlying amount is returned correctly', async () => {
-        const underlying = await transformer.callStatic.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        const underlying = await transformer.callStatic.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
         expect(underlying.length).to.equal(1);
         expect(underlying[0].amount).to.equal(AMOUNT_UNDERLYING);
         expect(underlying[0].underlying).to.equal(underlyingToken.address);
@@ -157,7 +161,7 @@ describe('ERC4626Transformer', () => {
   describe('transformToDependent', () => {
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
-      input: (underlying) => [vault.address, underlying, recipient.address],
+      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
     });
     when('function is called', () => {
       given(async () => {
@@ -165,7 +169,8 @@ describe('ERC4626Transformer', () => {
         await transformer.transformToDependent(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
-          recipient.address
+          recipient.address,
+          AMOUNT_DEPENDENT
         );
       });
       then('underlying token is taken from caller', () => {
@@ -181,7 +186,8 @@ describe('ERC4626Transformer', () => {
         const amountDependent = await transformer.callStatic.transformToDependent(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
-          recipient.address
+          recipient.address,
+          AMOUNT_DEPENDENT
         );
         expect(amountDependent).to.equal(AMOUNT_DEPENDENT);
       });
@@ -191,7 +197,7 @@ describe('ERC4626Transformer', () => {
   describe('transformToExpectedUnderlying', () => {
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
-      input: (underlying) => [vault.address, underlying, recipient.address],
+      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
     });
     when('function is called', () => {
       given(async () => {
@@ -199,7 +205,8 @@ describe('ERC4626Transformer', () => {
         await transformer.transformToExpectedUnderlying(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
-          recipient.address
+          recipient.address,
+          AMOUNT_DEPENDENT
         );
       });
       then('vault is called correctly', () => {
@@ -209,7 +216,8 @@ describe('ERC4626Transformer', () => {
         const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
-          recipient.address
+          recipient.address,
+          AMOUNT_DEPENDENT
         );
         expect(spentDependent).to.equal(AMOUNT_DEPENDENT);
       });
@@ -221,7 +229,9 @@ describe('ERC4626Transformer', () => {
       given(async () => {
         vault.previewMint.returns(AMOUNT_UNDERLYING);
         vault.mint.returns(AMOUNT_UNDERLYING);
-        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
       });
       then('preview mint is called correctly', () => {
         expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
@@ -239,7 +249,9 @@ describe('ERC4626Transformer', () => {
         expect(underlyingToken.transfer).to.not.have.been.called;
       });
       then('dependent amount is returned correctly', async () => {
-        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
         expect(spentUnderlying.length).to.equal(1);
         expect(spentUnderlying[0].amount).to.equal(AMOUNT_UNDERLYING);
         expect(spentUnderlying[0].underlying).to.equal(underlyingToken.address);
@@ -249,7 +261,9 @@ describe('ERC4626Transformer', () => {
       given(async () => {
         vault.previewMint.returns(AMOUNT_UNDERLYING);
         vault.mint.returns(AMOUNT_UNDERLYING - 1);
-        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address);
+        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
+          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
+        ]);
       });
       then('preview mint is called correctly', () => {
         expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);

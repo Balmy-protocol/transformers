@@ -68,9 +68,16 @@ interface ITransformerRegistry is ITransformer {
    * @dev This function was made payable, so that it could be multicalled when msg.value > 0
    * @param dependent The address of the dependent token
    * @param recipient The address that would receive the underlying tokens
+   * @param minAmountOut The minimum amount of underlying that the caller expects to get. Will fail
+   *                     if less is received. As a general rule, the underlying tokens should
+   *                     be provided in the same order as `getUnderlying` returns them
    * @return The transformed amount in each of the underlying tokens
    */
-  function transformAllToUnderlying(address dependent, address recipient) external payable returns (UnderlyingAmount[] memory);
+  function transformAllToUnderlying(
+    address dependent,
+    address recipient,
+    UnderlyingAmount[] calldata minAmountOut
+  ) external payable returns (UnderlyingAmount[] memory);
 
   /**
    * @notice Executes a transformation to the dependent token, by taking the caller's entire
@@ -79,7 +86,13 @@ interface ITransformerRegistry is ITransformer {
    *      This function was made payable, so that it could be multicalled when msg.value > 0
    * @param dependent The address of the dependent token
    * @param recipient The address that would receive the dependent tokens
+   * @param minAmountOut The minimum amount of dependent that the caller expects to get. Will fail
+   *                     if less is received
    * @return amountDependent The transformed amount in the dependent token
    */
-  function transformAllToDependent(address dependent, address recipient) external payable returns (uint256 amountDependent);
+  function transformAllToDependent(
+    address dependent,
+    address recipient,
+    uint256 minAmountOut
+  ) external payable returns (uint256 amountDependent);
 }

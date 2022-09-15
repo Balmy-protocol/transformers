@@ -63,8 +63,10 @@ contract ERC4626Transformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _minAmountOut
   ) external payable returns (UnderlyingAmount[] memory) {
+    if (_minAmountOut.length != 1) revert InvalidUnderlyingInput();
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
+    if (_minAmountOut[0].amount > _amount) revert ReceivedLessThanExpected(_amount);
     return _toSingletonArray(_underlying, _amount);
   }
 
@@ -82,6 +84,7 @@ contract ERC4626Transformer is BaseTransformer {
     _underlyingToken.safeTransferFrom(msg.sender, address(this), _underlyingAmount);
     _underlyingToken.approve(_dependent, _underlyingAmount);
     _amountDependent = IERC4626(_dependent).deposit(_underlyingAmount, _recipient);
+    if (_minAmountOut > _amountDependent) revert ReceivedLessThanExpected(_amountDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -93,6 +96,7 @@ contract ERC4626Transformer is BaseTransformer {
   ) external payable returns (uint256 _spentDependent) {
     if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = IERC4626(_dependent).withdraw(_expectedUnderlying[0].amount, _recipient, msg.sender);
+    if (_maxAmountIn < _spentDependent) revert NeededMoreThanExpected(_spentDependent);
   }
 
   /// @inheritdoc ITransformer
@@ -102,6 +106,7 @@ contract ERC4626Transformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _maxAmountIn
   ) external payable returns (UnderlyingAmount[] memory) {
+    if (_maxAmountIn.length != 1) revert InvalidUnderlyingInput();
     // Check how much underlying would be needed to mint the vault tokens
     uint256 _neededUnderlying = IERC4626(_dependent).previewMint(_expectedDependent);
     // Take the needed underlying tokens from the caller, and approve the vault
@@ -110,6 +115,7 @@ contract ERC4626Transformer is BaseTransformer {
     _underlying.approve(_dependent, _neededUnderlying);
     // Mint the vault tokens
     uint256 _spentUnderlying = IERC4626(_dependent).mint(_expectedDependent, _recipient);
+    if (_maxAmountIn[0].amount < _spentUnderlying) revert NeededMoreThanExpected(_spentUnderlying);
     // If some tokens were left unspent, then return to caller
     if (_spentUnderlying < _neededUnderlying) {
       unchecked {

@@ -20,6 +20,9 @@ const TOKENS = {
     address: '0x9d0464996170c6b9e75eed71c68b99ddedf279e8',
     whale: '0x903da6213a5a12b61c821598154efad98c3b20e4',
   },
+  WETH: {
+    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  },
 };
 
 describe('Transformer Registry - Transform All', () => {
@@ -37,9 +40,12 @@ describe('Transformer Registry - Transform All', () => {
     await fork({ chain: 'ethereum', blockNumber: BLOCK_NUMBER });
 
     // Deploy transformer
-    await deployments.fixture(['TransformerRegistry', 'ERC4626Transformer'], { keepExistingDeployments: false });
+    await deployments.fixture(['TransformerRegistry', 'ERC4626Transformer', 'ProtocolTokenWrapperTransformer'], {
+      keepExistingDeployments: false,
+    });
     registry = await ethers.getContract<TransformerRegistry>('TransformerRegistry');
-    const transformer = await ethers.getContract<BaseTransformer>('ERC4626Transformer');
+    const erc4626Transformer = await ethers.getContract<BaseTransformer>('ERC4626Transformer');
+    const nativeTokenTransformer = await ethers.getContract<BaseTransformer>('ProtocolTokenWrapperTransformer');
 
     // Set governor
     const governor = await wallet.impersonate(await registry.governor());
@@ -50,7 +56,10 @@ describe('Transformer Registry - Transform All', () => {
     underlying = await ethers.getContractAt<IERC20>(IERC20_ABI, TOKENS['cvxCRVCRV'].address);
 
     // Register transformer
-    await registry.connect(governor).registerTransformers([{ transformer: transformer.address, dependents: [dependent.address] }]);
+    await registry.connect(governor).registerTransformers([
+      { transformer: erc4626Transformer.address, dependents: [dependent.address] },
+      { transformer: nativeTokenTransformer.address, dependents: [TOKENS['WETH'].address] },
+    ]);
 
     // Sent tokens from whales to signer
     const dependentWhale = await wallet.impersonate(TOKENS['cvxCRVCRV Vault'].whale);
@@ -109,6 +118,22 @@ describe('Transformer Registry - Transform All', () => {
       then('dependent tokens are sent to the recipient', async () => {
         const recipientBalance = await dependent.balanceOf(RECIPIENT);
         expect(recipientBalance).to.equal(expectedDependent);
+      });
+    });
+    when('transforming all ETH to dependent', () => {
+      const AMOUNT = utils.parseEther('1');
+      let WETH: IERC20;
+      given(async () => {
+        WETH = await ethers.getContractAt<IERC20>(IERC20_ABI, TOKENS['WETH'].address);
+        await registry.connect(signer).transformAllToDependent(WETH.address, RECIPIENT, { value: AMOUNT });
+      });
+      then('all underlying tokens are transformed', async () => {
+        const balance = await ethers.provider.getBalance(registry.address);
+        expect(balance).to.equal(0);
+      });
+      then('dependent tokens are sent to the recipient', async () => {
+        const recipientBalance = await WETH.balanceOf(RECIPIENT);
+        expect(recipientBalance).to.equal(AMOUNT);
       });
     });
   });

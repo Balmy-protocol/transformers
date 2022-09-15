@@ -15,14 +15,14 @@ contract ERC4626Transformer is BaseTransformer {
 
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {
-    return _toUnderlying(IERC4626(_dependent).asset());
+    return _toSingletonArray(IERC4626(_dependent).asset());
   }
 
   /// @inheritdoc ITransformer
   function calculateTransformToUnderlying(address _dependent, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).previewRedeem(_amountDependent);
-    return _toUnderylingAmount(_underlying, _amount);
+    return _toSingletonArray(_underlying, _amount);
   }
 
   /// @inheritdoc ITransformer
@@ -53,7 +53,7 @@ contract ERC4626Transformer is BaseTransformer {
   {
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).previewMint(_expectedDependent);
-    return _toUnderylingAmount(_underlying, _amount);
+    return _toSingletonArray(_underlying, _amount);
   }
 
   /// @inheritdoc ITransformer
@@ -64,7 +64,7 @@ contract ERC4626Transformer is BaseTransformer {
   ) external payable returns (UnderlyingAmount[] memory) {
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
-    return _toUnderylingAmount(_underlying, _amount);
+    return _toSingletonArray(_underlying, _amount);
   }
 
   /// @inheritdoc ITransformer
@@ -108,17 +108,19 @@ contract ERC4626Transformer is BaseTransformer {
     uint256 _spentUnderlying = IERC4626(_dependent).mint(_expectedDependent, _recipient);
     // If some tokens were left unspent, then return to caller
     if (_spentUnderlying < _neededUnderlying) {
-      _underlying.safeTransfer(msg.sender, _neededUnderlying - _spentUnderlying);
+      unchecked {
+        _underlying.safeTransfer(msg.sender, _neededUnderlying - _spentUnderlying);
+      }
     }
-    return _toUnderylingAmount(address(_underlying), _spentUnderlying);
+    return _toSingletonArray(address(_underlying), _spentUnderlying);
   }
 
-  function _toUnderlying(address _underlying) internal pure returns (address[] memory _underlyingArray) {
+  function _toSingletonArray(address _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);
     _underlyingArray[0] = _underlying;
   }
 
-  function _toUnderylingAmount(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
+  function _toSingletonArray(address _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
     _amounts = new UnderlyingAmount[](1);
     _amounts[0] = UnderlyingAmount({underlying: _underlying, amount: _amount});
   }

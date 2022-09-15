@@ -6,6 +6,7 @@ import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { behaviours } from '@utils';
 
 chai.use(smock.matchers);
 
@@ -74,6 +75,10 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('calculateTransformToDependent', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateTransformToDependent',
+      input: (underlying) => [vault.address, underlying],
+    });
     when('function is called', () => {
       let amountDependent: BigNumber;
       given(async () => {
@@ -92,6 +97,10 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('calculateNeededToTransformToUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateNeededToTransformToUnderlying',
+      input: (underlying) => [vault.address, underlying],
+    });
     when('function is called', () => {
       let neededDependent: BigNumber;
       given(async () => {
@@ -146,6 +155,10 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToDependent', () => {
+    invalidUnderlyingInputTest({
+      func: 'transformToDependent',
+      input: (underlying) => [vault.address, underlying, recipient.address],
+    });
     when('function is called', () => {
       given(async () => {
         vault.deposit.returns(AMOUNT_DEPENDENT);
@@ -176,6 +189,10 @@ describe('ERC4626Transformer', () => {
   });
 
   describe('transformToExpectedUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'transformToDependent',
+      input: (underlying) => [vault.address, underlying, recipient.address],
+    });
     when('function is called', () => {
       given(async () => {
         vault.withdraw.returns(AMOUNT_DEPENDENT);
@@ -251,4 +268,28 @@ describe('ERC4626Transformer', () => {
       });
     });
   });
+
+  function invalidUnderlyingInputTest({ func, input }: { func: string; input: (_: ITransformer.UnderlyingAmountStruct[]) => any[] }) {
+    when('underlying has zero length', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func,
+          args: input([]),
+          message: `InvalidUnderlyingInput`,
+        });
+      });
+    });
+    when('underlying has two elements', () => {
+      then('tx reverts with message', async () => {
+        const element = { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING };
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func,
+          args: input([element, element]),
+          message: `InvalidUnderlyingInput`,
+        });
+      });
+    });
+  }
 });

@@ -19,6 +19,9 @@ interface ITransformer {
     uint256 amount;
   }
 
+  /// @notice Thrown when the underlying input is not valid for the used transformer
+  error InvalidUnderlyingInput();
+
   /**
    * @notice Returns the addresses of all the underlying tokens, for the given dependent
    * @dev This function must be unaware of context. The returned values must be the same,

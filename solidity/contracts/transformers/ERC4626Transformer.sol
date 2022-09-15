@@ -31,6 +31,7 @@ contract ERC4626Transformer is BaseTransformer {
     view
     returns (uint256 _amountDependent)
   {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
     _amountDependent = IERC4626(_dependent).previewDeposit(_underlying[0].amount);
   }
 
@@ -40,6 +41,7 @@ contract ERC4626Transformer is BaseTransformer {
     view
     returns (uint256 _neededDependent)
   {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _neededDependent = IERC4626(_dependent).previewWithdraw(_expectedUnderlying[0].amount);
   }
 
@@ -71,6 +73,7 @@ contract ERC4626Transformer is BaseTransformer {
     UnderlyingAmount[] calldata _underlying,
     address _recipient
   ) external payable returns (uint256 _amountDependent) {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
     IERC20 _underlyingToken = IERC20(_underlying[0].underlying);
     uint256 _underlyingAmount = _underlying[0].amount;
     // We need to take the tokens from the sender, and approve them so that the vault can take it from us
@@ -85,6 +88,7 @@ contract ERC4626Transformer is BaseTransformer {
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
   ) external payable returns (uint256 _spentDependent) {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = IERC4626(_dependent).withdraw(_expectedUnderlying[0].amount, _recipient, msg.sender);
   }
 

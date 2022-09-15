@@ -27,6 +27,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
 
   /// @inheritdoc ITransformer
   function calculateTransformToDependent(address, UnderlyingAmount[] calldata _underlying) external pure returns (uint256 _amountDependent) {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
     _amountDependent = _underlying[0].amount;
   }
 
@@ -36,6 +37,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     pure
     returns (uint256 _neededDependent)
   {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _neededDependent = _expectedUnderlying[0].amount;
   }
 
@@ -64,6 +66,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     UnderlyingAmount[] calldata _underlying,
     address _recipient
   ) external payable returns (uint256 _amountDependent) {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
     _amountDependent = _underlying[0].amount;
     _wrapAndTransfer(IWETH9(_dependent), _amountDependent, _recipient);
   }
@@ -74,6 +77,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient
   ) external payable returns (uint256 _spentDependent) {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = _expectedUnderlying[0].amount;
     _takeFromSenderAndUnwrap(IWETH9(_dependent), _spentDependent, _recipient);
   }

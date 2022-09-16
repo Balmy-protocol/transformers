@@ -83,7 +83,7 @@ describe('Transformer Registry - Transform All', () => {
       given(async () => {
         await dependent.connect(signer).approve(registry.address, INITIAL_DEPENDENT_BALANCE);
         expectedUnderlying = await registry.calculateTransformToUnderlying(dependent.address, INITIAL_DEPENDENT_BALANCE);
-        await registry.connect(signer).transformAllToUnderlying(dependent.address, RECIPIENT, expectedUnderlying);
+        await registry.connect(signer).transformAllToUnderlying(dependent.address, RECIPIENT, expectedUnderlying, constants.MaxUint256);
       });
       then('allowance is spent', async () => {
         expect(await dependent.allowance(signer.address, registry.address)).to.equal(0);
@@ -106,7 +106,7 @@ describe('Transformer Registry - Transform All', () => {
         expectedDependent = await registry.calculateTransformToDependent(dependent.address, [
           { underlying: underlying.address, amount: INITIAL_UNDERLYING_BALANCE },
         ]);
-        await registry.connect(signer).transformAllToDependent(dependent.address, RECIPIENT, expectedDependent);
+        await registry.connect(signer).transformAllToDependent(dependent.address, RECIPIENT, expectedDependent, constants.MaxUint256);
       });
       then('allowance is spent for all underlying tokens', async () => {
         expect(await underlying.allowance(signer.address, registry.address)).to.equal(0);
@@ -125,7 +125,7 @@ describe('Transformer Registry - Transform All', () => {
       let WETH: IERC20;
       given(async () => {
         WETH = await ethers.getContractAt<IERC20>(IERC20_ABI, TOKENS['WETH'].address);
-        await registry.connect(signer).transformAllToDependent(WETH.address, RECIPIENT, AMOUNT, { value: AMOUNT });
+        await registry.connect(signer).transformAllToDependent(WETH.address, RECIPIENT, AMOUNT, constants.MaxUint256, { value: AMOUNT });
       });
       then('all underlying tokens are transformed', async () => {
         const balance = await ethers.provider.getBalance(registry.address);

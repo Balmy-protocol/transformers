@@ -61,8 +61,9 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     uint256 _amountDependent,
     address _recipient,
-    UnderlyingAmount[] calldata _minAmountOut
-  ) external payable returns (UnderlyingAmount[] memory) {
+    UnderlyingAmount[] calldata _minAmountOut,
+    uint256 _deadline
+  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory) {
     if (_minAmountOut.length != 1) revert InvalidUnderlyingInput();
     address _underlying = IERC4626(_dependent).asset();
     uint256 _amount = IERC4626(_dependent).redeem(_amountDependent, _recipient, msg.sender);
@@ -75,8 +76,9 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _underlying,
     address _recipient,
-    uint256 _minAmountOut
-  ) external payable returns (uint256 _amountDependent) {
+    uint256 _minAmountOut,
+    uint256 _deadline
+  ) external payable checkDeadline(_deadline) returns (uint256 _amountDependent) {
     if (_underlying.length != 1) revert InvalidUnderlyingInput();
     IERC20 _underlyingToken = IERC20(_underlying[0].underlying);
     uint256 _underlyingAmount = _underlying[0].amount;
@@ -92,8 +94,9 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     UnderlyingAmount[] calldata _expectedUnderlying,
     address _recipient,
-    uint256 _maxAmountIn
-  ) external payable returns (uint256 _spentDependent) {
+    uint256 _maxAmountIn,
+    uint256 _deadline
+  ) external payable checkDeadline(_deadline) returns (uint256 _spentDependent) {
     if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
     _spentDependent = IERC4626(_dependent).withdraw(_expectedUnderlying[0].amount, _recipient, msg.sender);
     if (_maxAmountIn < _spentDependent) revert NeededMoreThanExpected(_spentDependent);
@@ -104,8 +107,9 @@ contract ERC4626Transformer is BaseTransformer {
     address _dependent,
     uint256 _expectedDependent,
     address _recipient,
-    UnderlyingAmount[] calldata _maxAmountIn
-  ) external payable returns (UnderlyingAmount[] memory) {
+    UnderlyingAmount[] calldata _maxAmountIn,
+    uint256 _deadline
+  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory) {
     if (_maxAmountIn.length != 1) revert InvalidUnderlyingInput();
     // Check how much underlying would be needed to mint the vault tokens
     uint256 _neededUnderlying = IERC4626(_dependent).previewMint(_expectedDependent);

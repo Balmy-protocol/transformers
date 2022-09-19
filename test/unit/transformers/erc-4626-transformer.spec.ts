@@ -328,8 +328,10 @@ describe('ERC4626Transformer', () => {
       then('underlying token is taken from caller', () => {
         expect(underlyingToken.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, AMOUNT_UNDERLYING);
       });
-      then('underlying token is approved for vault', () => {
-        expect(underlyingToken.approve).to.have.been.calledOnceWith(vault.address, AMOUNT_UNDERLYING);
+      then('underlying token is approved for vault and then set to zero', () => {
+        expect(underlyingToken.approve).to.have.been.calledTwice;
+        expect(underlyingToken.approve).to.have.been.calledWith(vault.address, AMOUNT_UNDERLYING);
+        expect(underlyingToken.approve).to.have.been.calledWith(vault.address, 0);
       });
       then('mint is called correctly', () => {
         expect(vault.mint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address);

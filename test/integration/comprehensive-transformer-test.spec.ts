@@ -1,5 +1,5 @@
 import { deployments, ethers, getNamedAccounts } from 'hardhat';
-import { evm, wallet } from '@utils';
+import { behaviours, evm, wallet } from '@utils';
 import { contract, given, then, when } from '@utils/bdd';
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -234,12 +234,18 @@ describe('Comprehensive Transformer Test', () => {
       });
       describe('transformToUnderlying', () => {
         const AMOUNT_DEPENDENT = utils.parseEther('1');
+        deadlineTest({
+          func: 'transformToUnderlying',
+          args: (deadline) => [dependent.address, AMOUNT_DEPENDENT, RECIPIENT, [], deadline],
+        });
         when('transforming to underlying', () => {
           let expectedUnderlying: ITransformer.UnderlyingAmountStructOutput[];
           given(async () => {
             await dependent.connect(signer).approve(transformer.address, AMOUNT_DEPENDENT);
             expectedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, AMOUNT_DEPENDENT);
-            await transformer.connect(signer).transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, expectedUnderlying);
+            await transformer
+              .connect(signer)
+              .transformToUnderlying(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, expectedUnderlying, constants.MaxUint256);
           });
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
@@ -259,6 +265,10 @@ describe('Comprehensive Transformer Test', () => {
       });
       describe('transformToDependent', () => {
         const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
+        deadlineTest({
+          func: 'transformToDependent',
+          args: (deadline) => [dependent.address, [], RECIPIENT, constants.Zero, deadline],
+        });
         when('transforming to dependent', () => {
           let expectedDependent: BigNumber;
           let gasSpent: BigNumber;
@@ -269,7 +279,9 @@ describe('Comprehensive Transformer Test', () => {
               await underlyingToken.connect(signer).approve(transformer.address, AMOUNT_PER_UNDERLYING);
             }
             expectedDependent = await transformer.calculateTransformToDependent(dependent.address, input);
-            const tx = await transformer.connect(signer).transformToDependent(dependent.address, input, RECIPIENT, expectedDependent, { value });
+            const tx = await transformer
+              .connect(signer)
+              .transformToDependent(dependent.address, input, RECIPIENT, expectedDependent, constants.MaxUint256, { value });
             const { gasUsed, effectiveGasPrice } = await tx.wait();
             gasSpent = gasUsed.mul(effectiveGasPrice);
           });
@@ -296,13 +308,19 @@ describe('Comprehensive Transformer Test', () => {
       });
       describe('transformToExpectedUnderlying', () => {
         const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
+        deadlineTest({
+          func: 'transformToExpectedUnderlying',
+          args: (deadline) => [dependent.address, [], RECIPIENT, constants.Zero, deadline],
+        });
         when('transforming to an expected amount of underlying', () => {
           let neededDependent: BigNumber;
           given(async () => {
             const input = underlying.map((token) => ({ underlying: token.address, amount: AMOUNT_PER_UNDERLYING }));
             neededDependent = await transformer.calculateNeededToTransformToUnderlying(dependent.address, input);
             await dependent.connect(signer).approve(transformer.address, neededDependent);
-            await transformer.connect(signer).transformToExpectedUnderlying(dependent.address, input, RECIPIENT, neededDependent);
+            await transformer
+              .connect(signer)
+              .transformToExpectedUnderlying(dependent.address, input, RECIPIENT, neededDependent, constants.MaxUint256);
           });
           then('allowance is spent', async () => {
             expect(await dependent.allowance(signer.address, transformer.address)).to.equal(0);
@@ -321,6 +339,10 @@ describe('Comprehensive Transformer Test', () => {
       });
       describe('transformToExpectedDependent', () => {
         const AMOUNT_DEPENDENT = utils.parseEther('1');
+        deadlineTest({
+          func: 'transformToExpectedDependent',
+          args: (deadline) => [dependent.address, constants.Zero, RECIPIENT, [], deadline],
+        });
         when('transforming to an expected amount of dependent', () => {
           let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
           let gasSpent: BigNumber;
@@ -333,7 +355,7 @@ describe('Comprehensive Transformer Test', () => {
             const value = isTokenUnderyling(PROTOCOL_TOKEN) ? neededUnderlying[0].amount : constants.Zero;
             const tx = await transformer
               .connect(signer)
-              .transformToExpectedDependent(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, neededUnderlying, { value });
+              .transformToExpectedDependent(dependent.address, AMOUNT_DEPENDENT, RECIPIENT, neededUnderlying, constants.MaxUint256, { value });
             const { gasUsed, effectiveGasPrice } = await tx.wait();
             gasSpent = gasUsed.mul(effectiveGasPrice);
           });
@@ -458,6 +480,23 @@ describe('Comprehensive Transformer Test', () => {
       function isTokenUnderyling(token: string) {
         const underlyingTokens = underlying.map(({ address }) => address.toLowerCase());
         return underlyingTokens.includes(token.toLowerCase());
+      }
+      function deadlineTest({ func, args }: { func: string; args: (deadline: BigNumberish) => any[] }) {
+        when('deadline has passed', () => {
+          const DEADLINE = Math.floor(Date.now() / 1000) + 60 * 15; // 15 min into the future
+          given(async () => {
+            // Set time to right after deadline
+            await evm.advanceToTime(DEADLINE + 1);
+          });
+          then('tx reverts with message', async () => {
+            await behaviours.txShouldRevertWithMessage({
+              contract: transformer.connect(signer),
+              func,
+              args: args(DEADLINE),
+              message: `TransactionExpired`,
+            });
+          });
+        });
       }
     });
   }

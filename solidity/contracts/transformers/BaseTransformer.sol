@@ -18,4 +18,9 @@ abstract contract BaseTransformer is CollectableDust, Multicall, ERC165, ITransf
       _interfaceId == type(IMulticall).interfaceId ||
       super.supportsInterface(_interfaceId);
   }
+
+  modifier checkDeadline(uint256 _deadline) {
+    if (block.timestamp > _deadline) revert TransactionExpired();
+    _;
+  }
 }

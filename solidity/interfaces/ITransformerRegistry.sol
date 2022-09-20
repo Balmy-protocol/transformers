@@ -71,12 +71,14 @@ interface ITransformerRegistry is ITransformer {
    * @param minAmountOut The minimum amount of underlying that the caller expects to get. Will fail
    *                     if less is received. As a general rule, the underlying tokens should
    *                     be provided in the same order as `getUnderlying` returns them
+   * @param deadline A deadline when the transaction becomes invalid
    * @return The transformed amount in each of the underlying tokens
    */
   function transformAllToUnderlying(
     address dependent,
     address recipient,
-    UnderlyingAmount[] calldata minAmountOut
+    UnderlyingAmount[] calldata minAmountOut,
+    uint256 deadline
   ) external payable returns (UnderlyingAmount[] memory);
 
   /**
@@ -88,11 +90,13 @@ interface ITransformerRegistry is ITransformer {
    * @param recipient The address that would receive the dependent tokens
    * @param minAmountOut The minimum amount of dependent that the caller expects to get. Will fail
    *                     if less is received
+   * @param deadline A deadline when the transaction becomes invalid
    * @return amountDependent The transformed amount in the dependent token
    */
   function transformAllToDependent(
     address dependent,
     address recipient,
-    uint256 minAmountOut
+    uint256 minAmountOut,
+    uint256 deadline
   ) external payable returns (uint256 amountDependent);
 }

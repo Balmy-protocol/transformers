@@ -4,7 +4,7 @@ import { given, then, when } from '@utils/bdd';
 import { ERC4626Transformer, ERC4626Transformer__factory, IERC20, IERC4626, ITransformer } from '@typechained';
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { behaviours } from '@utils';
 
@@ -13,6 +13,7 @@ chai.use(smock.matchers);
 describe('ERC4626Transformer', () => {
   const AMOUNT_DEPENDENT = 100000;
   const AMOUNT_UNDERLYING = 12345678;
+  const DEADLINE = constants.MaxInt256;
 
   let signer: SignerWithAddress, recipient: SignerWithAddress;
   let transformer: ERC4626Transformer;
@@ -143,31 +144,45 @@ describe('ERC4626Transformer', () => {
     });
     invalidUnderlyingInputTest({
       func: 'transformToUnderlying',
-      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying],
+      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying, DEADLINE],
     });
     when('asking for more than received', () => {
       then('tx reverts with message', async () => {
         await behaviours.txShouldRevertWithMessage({
           contract: transformer,
           func: 'transformToUnderlying',
-          args: [vault.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING + 1 }]],
+          args: [
+            vault.address,
+            AMOUNT_DEPENDENT,
+            recipient.address,
+            [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING + 1 }],
+            DEADLINE,
+          ],
           message: `ReceivedLessThanExpected(${AMOUNT_UNDERLYING})`,
         });
       });
     });
     when('function is called', () => {
       given(async () => {
-        await transformer.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address, [
-          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
-        ]);
+        await transformer.transformToUnderlying(
+          vault.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
       });
       then('vault is called correctly', () => {
         expect(vault.redeem).to.have.been.calledOnceWith(AMOUNT_DEPENDENT, recipient.address, signer.address);
       });
       then('underlying amount is returned correctly', async () => {
-        const underlying = await transformer.callStatic.transformToUnderlying(vault.address, AMOUNT_DEPENDENT, recipient.address, [
-          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
-        ]);
+        const underlying = await transformer.callStatic.transformToUnderlying(
+          vault.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
         expect(underlying.length).to.equal(1);
         expect(underlying[0].amount).to.equal(AMOUNT_UNDERLYING);
         expect(underlying[0].underlying).to.equal(underlyingToken.address);
@@ -181,14 +196,20 @@ describe('ERC4626Transformer', () => {
     });
     invalidUnderlyingInputTest({
       func: 'transformToDependent',
-      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
+      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT, DEADLINE],
     });
     when('asking for more than received', () => {
       then('tx reverts with message', async () => {
         await behaviours.txShouldRevertWithMessage({
           contract: transformer,
           func: 'transformToDependent',
-          args: [vault.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }], recipient.address, AMOUNT_DEPENDENT + 1],
+          args: [
+            vault.address,
+            [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+            recipient.address,
+            AMOUNT_DEPENDENT + 1,
+            DEADLINE,
+          ],
           message: `ReceivedLessThanExpected(${AMOUNT_DEPENDENT})`,
         });
       });
@@ -199,7 +220,8 @@ describe('ERC4626Transformer', () => {
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
           recipient.address,
-          AMOUNT_DEPENDENT
+          AMOUNT_DEPENDENT,
+          DEADLINE
         );
       });
       then('underlying token is taken from caller', () => {
@@ -216,7 +238,8 @@ describe('ERC4626Transformer', () => {
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
           recipient.address,
-          AMOUNT_DEPENDENT
+          AMOUNT_DEPENDENT,
+          DEADLINE
         );
         expect(amountDependent).to.equal(AMOUNT_DEPENDENT);
       });
@@ -229,14 +252,20 @@ describe('ERC4626Transformer', () => {
     });
     invalidUnderlyingInputTest({
       func: 'transformToExpectedUnderlying',
-      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT],
+      input: (underlying) => [vault.address, underlying, recipient.address, AMOUNT_DEPENDENT, DEADLINE],
     });
     when('asking for less than needed', () => {
       then('tx reverts with message', async () => {
         await behaviours.txShouldRevertWithMessage({
           contract: transformer,
           func: 'transformToExpectedUnderlying',
-          args: [vault.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }], recipient.address, AMOUNT_DEPENDENT - 1],
+          args: [
+            vault.address,
+            [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+            recipient.address,
+            AMOUNT_DEPENDENT - 1,
+            DEADLINE,
+          ],
           message: `NeededMoreThanExpected(${AMOUNT_DEPENDENT})`,
         });
       });
@@ -247,7 +276,8 @@ describe('ERC4626Transformer', () => {
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
           recipient.address,
-          AMOUNT_DEPENDENT
+          AMOUNT_DEPENDENT,
+          DEADLINE
         );
       });
       then('vault is called correctly', () => {
@@ -258,7 +288,8 @@ describe('ERC4626Transformer', () => {
           vault.address,
           [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
           recipient.address,
-          AMOUNT_DEPENDENT
+          AMOUNT_DEPENDENT,
+          DEADLINE
         );
         expect(spentDependent).to.equal(AMOUNT_DEPENDENT);
       });
@@ -272,23 +303,33 @@ describe('ERC4626Transformer', () => {
     });
     invalidUnderlyingInputTest({
       func: 'transformToExpectedDependent',
-      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying],
+      input: (underlying) => [vault.address, AMOUNT_DEPENDENT, recipient.address, underlying, DEADLINE],
     });
     when('asking for less than needed', () => {
       then('tx reverts with message', async () => {
         await behaviours.txShouldRevertWithMessage({
           contract: transformer,
           func: 'transformToExpectedDependent',
-          args: [vault.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING - 1 }]],
+          args: [
+            vault.address,
+            AMOUNT_DEPENDENT,
+            recipient.address,
+            [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING - 1 }],
+            DEADLINE,
+          ],
           message: `NeededMoreThanExpected(${AMOUNT_UNDERLYING})`,
         });
       });
     });
     when('preview matches mint', () => {
       given(async () => {
-        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
-          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
-        ]);
+        await transformer.transformToExpectedDependent(
+          vault.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
       });
       then('preview mint is called correctly', () => {
         expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);
@@ -306,9 +347,13 @@ describe('ERC4626Transformer', () => {
         expect(underlyingToken.transfer).to.not.have.been.called;
       });
       then('dependent amount is returned correctly', async () => {
-        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
-          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
-        ]);
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(
+          vault.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
         expect(spentUnderlying.length).to.equal(1);
         expect(spentUnderlying[0].amount).to.equal(AMOUNT_UNDERLYING);
         expect(spentUnderlying[0].underlying).to.equal(underlyingToken.address);
@@ -318,9 +363,13 @@ describe('ERC4626Transformer', () => {
       given(async () => {
         vault.previewMint.returns(AMOUNT_UNDERLYING);
         vault.mint.returns(AMOUNT_UNDERLYING - 1);
-        await transformer.transformToExpectedDependent(vault.address, AMOUNT_DEPENDENT, recipient.address, [
-          { underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING },
-        ]);
+        await transformer.transformToExpectedDependent(
+          vault.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: underlyingToken.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
       });
       then('preview mint is called correctly', () => {
         expect(vault.previewMint).to.have.been.calledOnceWith(AMOUNT_DEPENDENT);

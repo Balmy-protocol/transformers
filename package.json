@@ -1,6 +1,6 @@
 {
   "name": "@mean-finance/transformers",
-  "version": "1.0.0-rc10",
+  "version": "1.0.0-rc11",
   "description": "Mean Transformers",
   "keywords": [
     "ethereum",
@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "@0xged/hardhat-deploy": "0.11.5",
-    "@mean-finance/deterministic-factory": "1.5.0",
+    "@mean-finance/deterministic-factory": "1.5.1",
     "@openzeppelin/contracts": "4.7.3"
   },
   "devDependencies": {

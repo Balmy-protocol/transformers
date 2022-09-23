@@ -7,9 +7,10 @@ import { IERC20, BaseTransformer, ITransformer, TransformerRegistry } from '@typ
 import { BigNumber, constants, utils } from 'ethers';
 import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { DeterministicFactory, DeterministicFactory__factory } from '@mean-finance/deterministic-factory';
+import { address as DETERMINISTIC_FACTORY_ADDRESS } from '@mean-finance/deterministic-factory/deployments/ethereum/DeterministicFactory.json';
 import { snapshot } from '@utils/evm';
 
-const BLOCK_NUMBER = 15014793;
+const BLOCK_NUMBER = 15583285;
 
 const TOKENS = {
   'cvxCRVCRV Vault': {
@@ -145,14 +146,14 @@ describe('Transformer Registry - Transform All', () => {
       blockNumber,
     });
 
-    const { deployer, eoaAdmin } = await getNamedAccounts();
-    // Give deployer role to our deployer address
-    const admin = await wallet.impersonate(eoaAdmin);
+    const { deployer, msig } = await getNamedAccounts();
+    const admin = await wallet.impersonate(msig);
     await wallet.setBalance({ account: admin._address, balance: constants.MaxUint256 });
     const deterministicFactory = await ethers.getContractAt<DeterministicFactory>(
       DeterministicFactory__factory.abi,
-      '0xbb681d77506df5CA21D2214ab3923b4C056aa3e2'
+      DETERMINISTIC_FACTORY_ADDRESS
     );
+    // Give deployer role to our deployer address
     await deterministicFactory.connect(admin).grantRole(await deterministicFactory.DEPLOYER_ROLE(), deployer);
   }
 });

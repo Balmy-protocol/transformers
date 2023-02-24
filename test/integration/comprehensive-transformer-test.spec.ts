@@ -515,8 +515,10 @@ describe('Comprehensive Transformer Test', () => {
   }
 
   function expectToBeEqual(actual: BigNumberish, expected: BigNumberish, threshold?: BigNumberish) {
-    const thresholdBN = BigNumber.from(threshold ?? 0);
-    expect(actual).to.be.gte(BigNumber.from(expected).sub(thresholdBN)).and.lte(BigNumber.from(expected).add(thresholdBN));
+    const expectedBN = BigNumber.from(expected);
+    expect(actual)
+      .to.be.gte(expectedBN.sub(threshold ?? 0))
+      .and.lte(expectedBN.add(threshold ?? 0));
   }
 
   async function wrap(token: string): Promise<IERC20Like> {

@@ -23,10 +23,16 @@ contract wstETHTransformer is BaseTransformer {
   }
 
   /// @inheritdoc ITransformer
-  function calculateTransformToUnderlying(address, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {}
+  function calculateTransformToUnderlying(address, uint256 _amountDependent) external view returns (UnderlyingAmount[] memory) {
+    uint256 _amountUnderlying = stETH.getPooledEthByShares(_amountDependent);
+    return _toSingletonArray(stETH, _amountUnderlying);
+  }
 
   /// @inheritdoc ITransformer
-  function calculateTransformToDependent(address, UnderlyingAmount[] calldata _underlying) external view returns (uint256 _amountDependent) {}
+  function calculateTransformToDependent(address, UnderlyingAmount[] calldata _underlying) external view returns (uint256 _amountDependent) {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
+    _amountDependent = stETH.getSharesByPooledEth(_underlying[0].amount);
+  }
 
   /// @inheritdoc ITransformer
   function calculateNeededToTransformToUnderlying(address, UnderlyingAmount[] calldata _expectedUnderlying)

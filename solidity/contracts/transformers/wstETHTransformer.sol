@@ -82,6 +82,11 @@ contract wstETHTransformer is BaseTransformer {
     _underlyingArray = new address[](1);
     _underlyingArray[0] = address(_underlying);
   }
+
+  function _toSingletonArray(IstETH _underlying, uint256 _amount) internal pure returns (UnderlyingAmount[] memory _amounts) {
+    _amounts = new UnderlyingAmount[](1);
+    _amounts[0] = UnderlyingAmount({underlying: address(_underlying), amount: _amount});
+  }
 }
 
 interface IstETH is IERC20 {

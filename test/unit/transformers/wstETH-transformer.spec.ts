@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { then, when } from '@utils/bdd';
-import { ERC4626Transformer, IstETH, IwstETH, WstETHTransformer__factory } from '@typechained';
+import { IstETH, IwstETH, WstETHTransformer, WstETHTransformer__factory } from '@typechained';
 import { snapshot } from '@utils/evm';
 import { smock, FakeContract } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -10,7 +10,7 @@ chai.use(smock.matchers);
 
 describe('wstETHTransformer', () => {
   let signer: SignerWithAddress, recipient: SignerWithAddress;
-  let transformer: ERC4626Transformer;
+  let transformer: WstETHTransformer;
   let wstETH: FakeContract<IwstETH>;
   let stETH: FakeContract<IstETH>;
   let snapshotId: string;
@@ -26,6 +26,14 @@ describe('wstETHTransformer', () => {
 
   beforeEach(async () => {
     await snapshot.revert(snapshotId);
+  });
+
+  describe('constructor', () => {
+    when('contract is deployed', () => {
+      then('stETH is set correctly', async () => {
+        expect(await transformer.stETH()).to.equal(stETH.address);
+      });
+    });
   });
 
   describe('getUnderlying', () => {

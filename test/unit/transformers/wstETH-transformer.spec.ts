@@ -258,6 +258,135 @@ describe('wstETHTransformer', () => {
     });
   });
 
+  describe('transformToExpectedUnderlying', () => {
+    const toSpend = BigNumber.from(AMOUNT_UNDERLYING).mul(TOTAL_SHARES).div(TOTAL_SUPPLY).add(1).toNumber();
+    invalidUnderlyingInputTest({
+      func: 'transformToExpectedUnderlying',
+      input: (underlying) => [wstETH.address, underlying, recipient.address, AMOUNT_DEPENDENT, DEADLINE],
+    });
+    when('max amount is not met', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedUnderlying',
+          args: [wstETH.address, [{ underlying: stETH.address, amount: AMOUNT_UNDERLYING }], recipient.address, toSpend - 1, DEADLINE],
+          message: `NeededMoreThanExpected(${toSpend})`,
+        });
+      });
+    });
+    when('expected amount is not met', () => {
+      given(() => {
+        wstETH.unwrap.returns(AMOUNT_UNDERLYING - 1);
+      });
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedUnderlying',
+          args: [wstETH.address, [{ underlying: stETH.address, amount: AMOUNT_UNDERLYING }], recipient.address, toSpend, DEADLINE],
+          message: `ReceivedLessThanExpected(${AMOUNT_UNDERLYING - 1})`,
+        });
+      });
+    });
+    when('function is called', () => {
+      given(async () => {
+        wstETH.unwrap.returns(AMOUNT_UNDERLYING);
+        await transformer.transformToExpectedUnderlying(
+          wstETH.address,
+          [{ underlying: stETH.address, amount: AMOUNT_UNDERLYING }],
+          recipient.address,
+          toSpend,
+          DEADLINE
+        );
+      });
+      then('dependent is taken from caller', () => {
+        expect(wstETH.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, toSpend);
+      });
+      then('dependent is unwrapped', () => {
+        expect(wstETH.unwrap).to.have.been.calledOnceWith(toSpend);
+      });
+      then('underlying is transferred correctly', () => {
+        expect(stETH.transfer).to.have.been.calledOnceWith(recipient.address, AMOUNT_UNDERLYING);
+      });
+      then('returns spent dependent correctly', async () => {
+        const spentDependent = await transformer.callStatic.transformToExpectedUnderlying(
+          wstETH.address,
+          [{ underlying: stETH.address, amount: AMOUNT_UNDERLYING }],
+          recipient.address,
+          toSpend,
+          DEADLINE
+        );
+        expect(spentDependent).to.equal(toSpend);
+      });
+    });
+  });
+
+  describe('transformToExpectedDependent', () => {
+    const toSpend = BigNumber.from(AMOUNT_DEPENDENT).mul(TOTAL_SUPPLY).div(TOTAL_SHARES).add(1).toNumber();
+    invalidUnderlyingInputTest({
+      func: 'transformToExpectedDependent',
+      input: (underlying) => [wstETH.address, AMOUNT_DEPENDENT, recipient.address, underlying, DEADLINE],
+    });
+    when('max amount is not met', () => {
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedDependent',
+          args: [wstETH.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: stETH.address, amount: toSpend - 1 }], DEADLINE],
+          message: `NeededMoreThanExpected(${toSpend})`,
+        });
+      });
+    });
+    when('expected amount is not met', () => {
+      given(() => {
+        wstETH.wrap.returns(AMOUNT_DEPENDENT - 1);
+      });
+      then('tx reverts with message', async () => {
+        await behaviours.txShouldRevertWithMessage({
+          contract: transformer,
+          func: 'transformToExpectedDependent',
+          args: [wstETH.address, AMOUNT_DEPENDENT, recipient.address, [{ underlying: stETH.address, amount: toSpend }], DEADLINE],
+          message: `ReceivedLessThanExpected(${AMOUNT_DEPENDENT - 1})`,
+        });
+      });
+    });
+    when('function is called', () => {
+      given(async () => {
+        wstETH.wrap.returns(AMOUNT_DEPENDENT);
+        await transformer.transformToExpectedDependent(
+          wstETH.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: stETH.address, amount: toSpend }],
+          DEADLINE
+        );
+      });
+      then('underlying is taken from caller', () => {
+        expect(stETH.transferFrom).to.have.been.calledOnceWith(signer.address, transformer.address, toSpend);
+      });
+      then('underlying is approved for dependent', () => {
+        expect(stETH.approve).to.have.been.calledOnceWith(wstETH.address, toSpend);
+      });
+      then('underlying is wrapped', () => {
+        expect(wstETH.wrap).to.have.been.calledOnceWith(toSpend);
+      });
+      then('dependent is transferred correctly', () => {
+        expect(wstETH.transfer).to.have.been.calledOnceWith(recipient.address, AMOUNT_DEPENDENT);
+      });
+      then('dependent amount is returned correctly', async () => {
+        const spentUnderlying = await transformer.callStatic.transformToExpectedDependent(
+          wstETH.address,
+          AMOUNT_DEPENDENT,
+          recipient.address,
+          [{ underlying: stETH.address, amount: AMOUNT_UNDERLYING }],
+          DEADLINE
+        );
+        expect(spentUnderlying.length).to.equal(1);
+        expect(spentUnderlying[0].amount).to.equal(toSpend);
+        expect(spentUnderlying[0].underlying).to.equal(stETH.address);
+      });
+    });
+  });
+
   function invalidUnderlyingInputTest({ func, input }: { func: string; input: (_: ITransformer.UnderlyingAmountStruct[]) => any[] }) {
     when('underlying has zero length', () => {
       then('tx reverts with message', async () => {

@@ -89,7 +89,14 @@ contract wstETHTransformer is BaseTransformer {
     address _recipient,
     uint256 _maxAmountIn,
     uint256 _deadline
-  ) external payable checkDeadline(_deadline) returns (uint256 _spentDependent) {}
+  ) external payable checkDeadline(_deadline) returns (uint256 _spentDependent) {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
+    uint256 _expectedUnderlyingAmount = _expectedUnderlying[0].amount;
+    _spentDependent = _calculateNeededToTransformToUnderlying(_expectedUnderlyingAmount);
+    if (_spentDependent > _maxAmountIn) revert NeededMoreThanExpected(_spentDependent);
+    uint256 _receivedUnderlying = _takewstETHFromSenderAndUnwrap(_dependent, _spentDependent, _recipient);
+    if (_expectedUnderlyingAmount > _receivedUnderlying) revert ReceivedLessThanExpected(_receivedUnderlying);
+  }
 
   /// @inheritdoc ITransformer
   function transformToExpectedDependent(
@@ -98,7 +105,14 @@ contract wstETHTransformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _maxAmountIn,
     uint256 _deadline
-  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory _spentUnderlying) {}
+  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory _spentUnderlying) {
+    if (_maxAmountIn.length != 1) revert InvalidUnderlyingInput();
+    uint256 _neededUnderlyingAmount = _calculateNeededToTransformToDependent(_expectedDependent);
+    if (_neededUnderlyingAmount > _maxAmountIn[0].amount) revert NeededMoreThanExpected(_neededUnderlyingAmount);
+    uint256 _receivedDependent = _takestETHFromSenderAndWrap(_dependent, _neededUnderlyingAmount, _recipient);
+    if (_expectedDependent > _receivedDependent) revert ReceivedLessThanExpected(_receivedDependent);
+    return _toSingletonArray(stETH, _neededUnderlyingAmount);
+  }
 
   function _calculateNeededToTransformToUnderlying(uint256 _expectedUnderlying) internal view returns (uint256 _neededDependent) {
     // Since stETH contracts rounds down, we do the math here and round up

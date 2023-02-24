@@ -3,6 +3,7 @@
 pragma solidity >=0.8.7 <0.9.0;
 
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
 import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for wstETH <=> stETH
@@ -39,14 +40,20 @@ contract wstETHTransformer is BaseTransformer {
     external
     view
     returns (uint256 _neededDependent)
-  {}
+  {
+    if (_expectedUnderlying.length != 1) revert InvalidUnderlyingInput();
+    _neededDependent = _calculateNeededToTransformToUnderlying(_expectedUnderlying[0].amount);
+  }
 
   /// @inheritdoc ITransformer
   function calculateNeededToTransformToDependent(address, uint256 _expectedDependent)
     external
     view
     returns (UnderlyingAmount[] memory _neededUnderlying)
-  {}
+  {
+    uint256 _neededUnderlyingAmount = _calculateNeededToTransformToDependent(_expectedDependent);
+    return _toSingletonArray(stETH, _neededUnderlyingAmount);
+  }
 
   /// @inheritdoc ITransformer
   function transformToUnderlying(
@@ -83,6 +90,20 @@ contract wstETHTransformer is BaseTransformer {
     UnderlyingAmount[] calldata _maxAmountIn,
     uint256 _deadline
   ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory _spentUnderlying) {}
+
+  function _calculateNeededToTransformToUnderlying(uint256 _expectedUnderlying) internal view returns (uint256 _neededDependent) {
+    // Since stETH contracts rounds down, we do the math here and round up
+    uint256 _totalSuppy = stETH.totalSupply();
+    uint256 _totalShares = stETH.getTotalShares();
+    _neededDependent = Math.mulDiv(_expectedUnderlying, _totalShares, _totalSuppy, Math.Rounding.Up);
+  }
+
+  function _calculateNeededToTransformToDependent(uint256 _expectedDependent) internal view returns (uint256 _neededUnderlying) {
+    // Since stETH contracts rounds down, we do the math here and round up
+    uint256 _totalShares = stETH.getTotalShares();
+    uint256 _totalSuppy = stETH.totalSupply();
+    _neededUnderlying = Math.mulDiv(_expectedDependent, _totalSuppy, _totalShares, Math.Rounding.Up);
+  }
 
   function _toSingletonArray(IstETH _underlying) internal pure returns (address[] memory _underlyingArray) {
     _underlyingArray = new address[](1);

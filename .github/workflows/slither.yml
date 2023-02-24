@@ -2,10 +2,10 @@ name: Slither Analysis
 
 on:
 # We are disabling it for now, since it's not working
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
+# push:
+#   branches:
+#     - main
+# pull_request:
 
 jobs:
   analyze:

@@ -62,7 +62,12 @@ contract wstETHTransformer is BaseTransformer {
     address _recipient,
     UnderlyingAmount[] calldata _minAmountOut,
     uint256 _deadline
-  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory) {}
+  ) external payable checkDeadline(_deadline) returns (UnderlyingAmount[] memory) {
+    if (_minAmountOut.length != 1) revert InvalidUnderlyingInput();
+    uint256 _amountUnderlying = _takewstETHFromSenderAndUnwrap(_dependent, _amountDependent, _recipient);
+    if (_minAmountOut[0].amount > _amountUnderlying) revert ReceivedLessThanExpected(_amountUnderlying);
+    return _toSingletonArray(stETH, _amountUnderlying);
+  }
 
   /// @inheritdoc ITransformer
   function transformToDependent(
@@ -71,7 +76,11 @@ contract wstETHTransformer is BaseTransformer {
     address _recipient,
     uint256 _minAmountOut,
     uint256 _deadline
-  ) external payable checkDeadline(_deadline) returns (uint256 _amountDependent) {}
+  ) external payable checkDeadline(_deadline) returns (uint256 _amountDependent) {
+    if (_underlying.length != 1) revert InvalidUnderlyingInput();
+    _amountDependent = _takestETHFromSenderAndWrap(_dependent, _underlying[0].amount, _recipient);
+    if (_minAmountOut > _amountDependent) revert ReceivedLessThanExpected(_amountDependent);
+  }
 
   /// @inheritdoc ITransformer
   function transformToExpectedUnderlying(
@@ -103,6 +112,27 @@ contract wstETHTransformer is BaseTransformer {
     uint256 _totalShares = stETH.getTotalShares();
     uint256 _totalSuppy = stETH.totalSupply();
     _neededUnderlying = Math.mulDiv(_expectedDependent, _totalSuppy, _totalShares, Math.Rounding.Up);
+  }
+
+  function _takewstETHFromSenderAndUnwrap(
+    address _dependent,
+    uint256 _amount,
+    address _recipient
+  ) internal returns (uint256 _underlyingAmount) {
+    IwstETH(_dependent).safeTransferFrom(msg.sender, address(this), _amount);
+    _underlyingAmount = IwstETH(_dependent).unwrap(_amount);
+    stETH.safeTransfer(_recipient, _underlyingAmount);
+  }
+
+  function _takestETHFromSenderAndWrap(
+    address _dependent,
+    uint256 _amount,
+    address _recipient
+  ) internal returns (uint256 _dependentAmount) {
+    stETH.safeTransferFrom(msg.sender, address(this), _amount);
+    stETH.approve(_dependent, _amount);
+    _dependentAmount = IwstETH(_dependent).wrap(_amount);
+    IwstETH(_dependent).safeTransfer(_recipient, _dependentAmount);
   }
 
   function _toSingletonArray(IstETH _underlying) internal pure returns (address[] memory _underlyingArray) {

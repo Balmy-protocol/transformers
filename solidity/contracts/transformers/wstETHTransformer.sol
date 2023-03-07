@@ -109,7 +109,7 @@ interface IstETH is IERC20 {
   /**
    * @return The amount of shares that corresponds to `stEthAmount` protocol-controlled Ether.
    */
-  function getSharesByPooledEth(uint256 stEthAmount) external view returns (uint256);
+  function getSharesByPooledEth(uint256 ethAmount) external view returns (uint256);
 }
 
 interface IwstETH is IERC20 {

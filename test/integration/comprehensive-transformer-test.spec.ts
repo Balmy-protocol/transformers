@@ -43,6 +43,14 @@ const TOKENS = {
   ETH: {
     address: PROTOCOL_TOKEN,
   },
+  stETH: {
+    address: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84',
+    whale: '0x1982b2f5814301d4e9a8b0201555376e62f82428',
+  },
+  wstETH: {
+    address: '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0',
+    whale: '0x10cd5fbe1b404b7e19ef964b63939907bdaf42e2',
+  },
 };
 
 describe('Comprehensive Transformer Test', () => {
@@ -75,12 +83,20 @@ describe('Comprehensive Transformer Test', () => {
         .registerTransformers([{ transformer: transformer.address, dependents: [TOKENS['WETH'].address] }]),
   });
 
+  transformerComprehensiveTest({
+    transformer: 'wstETHTransformer',
+    dependent: 'wstETH',
+    underlying: ['stETH'],
+    threshold: 2, // stETH can be lost on transfers, so we have a small 2-wei threshold
+  });
+
   function transformerComprehensiveTest({
     transformer: transformerName,
     title,
     dependent: dependentId,
     underlying: underlyingIds,
     transformerDependencies,
+    threshold,
     setup,
   }: {
     title?: string;
@@ -88,6 +104,7 @@ describe('Comprehensive Transformer Test', () => {
     dependent: keyof typeof TOKENS;
     underlying: (keyof typeof TOKENS)[];
     transformerDependencies?: string[];
+    threshold?: BigNumberish;
     setup?: (transformer: BaseTransformer, governor: JsonRpcSigner, dependencies: BaseTransformer[]) => Promise<any>;
   }) {
     contract(title ?? transformerName, () => {
@@ -171,8 +188,7 @@ describe('Comprehensive Transformer Test', () => {
             }
           });
           then('transforming back to dependent returns the same value', async () => {
-            // Note: this test assumes that there is no transform fee
-            expect(await transformer.calculateTransformToDependent(dependent.address, returnedUnderlying)).to.equal(AMOUNT_DEPENDENT);
+            expectToBeEqual(await transformer.calculateTransformToDependent(dependent.address, returnedUnderlying), AMOUNT_DEPENDENT, threshold);
           });
         });
       });
@@ -185,12 +201,11 @@ describe('Comprehensive Transformer Test', () => {
             returnedDependent = await transformer.calculateTransformToDependent(dependent.address, input);
           });
           then('transforming back to underlying returns the same value', async () => {
-            // Note: this test assumes that there is no transform fee
             const returnedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, returnedDependent);
             expect(returnedUnderlying.length).to.equal(underlying.length);
             for (const { underlying: underlyingToken, amount } of returnedUnderlying) {
               expect(isTokenUnderyling(underlyingToken)).to.be.true;
-              expect(amount).to.equal(AMOUNT_PER_UNDERLYING);
+              expectToBeEqual(amount, AMOUNT_PER_UNDERLYING, threshold);
             }
           });
         });
@@ -204,12 +219,11 @@ describe('Comprehensive Transformer Test', () => {
             neededDependent = await transformer.calculateNeededToTransformToUnderlying(dependent.address, input);
           });
           then('then transforming the result returns the expected underlying', async () => {
-            // Note: this test assumes that there is no transform fee
             const returnedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, neededDependent);
             expect(returnedUnderlying.length).to.equal(underlying.length);
             for (const { underlying: underlyingToken, amount } of returnedUnderlying) {
               expect(isTokenUnderyling(underlyingToken)).to.be.true;
-              expect(amount).to.equal(AMOUNT_PER_UNDERLYING);
+              expectToBeEqual(amount, AMOUNT_PER_UNDERLYING, threshold);
             }
           });
         });
@@ -228,8 +242,7 @@ describe('Comprehensive Transformer Test', () => {
             }
           });
           then('then transforming the result returns the expected underlying', async () => {
-            // Note: this test assumes that there is no transform fee
-            expect(await transformer.calculateTransformToDependent(dependent.address, neededUnderlying)).to.equal(AMOUNT_DEPENDENT);
+            expectToBeEqual(await transformer.calculateTransformToDependent(dependent.address, neededUnderlying), AMOUNT_DEPENDENT, threshold);
           });
         });
       });
@@ -259,7 +272,7 @@ describe('Comprehensive Transformer Test', () => {
             for (const { underlying, amount } of expectedUnderlying) {
               const token = await wrap(underlying);
               const recipientBalance = await token.balanceOf(RECIPIENT);
-              expect(recipientBalance).to.equal(amount);
+              expectToBeEqual(recipientBalance, amount, threshold);
             }
           });
         });
@@ -297,7 +310,7 @@ describe('Comprehensive Transformer Test', () => {
               if (underlyingToken.address === PROTOCOL_TOKEN) {
                 expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING).sub(gasSpent));
               } else {
-                expect(balance).to.equal(INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING));
+                expectToBeEqual(balance, INITIAL_SIGNER_BALANCE.sub(AMOUNT_PER_UNDERLYING), threshold);
               }
             }
           });
@@ -333,7 +346,7 @@ describe('Comprehensive Transformer Test', () => {
           then('expected underlying tokens are sent to the recipient', async () => {
             for (const underlyingToken of underlying) {
               const recipientBalance = await underlyingToken.balanceOf(RECIPIENT);
-              expect(recipientBalance).to.equal(AMOUNT_PER_UNDERLYING);
+              expectToBeEqual(recipientBalance, AMOUNT_PER_UNDERLYING, threshold);
             }
           });
         });
@@ -427,12 +440,11 @@ describe('Comprehensive Transformer Test', () => {
             expect(returnedDependent1).to.equal(returnedDependent2);
           });
           then('transforming back to underlying returns the same value', async () => {
-            // Note: this test assumes that there is no transform fee
             const returnedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, returnedDependent1);
             expect(returnedUnderlying.length).to.equal(underlying.length);
             for (const { underlying: underlyingToken, amount } of returnedUnderlying) {
               expect(isTokenUnderyling(underlyingToken)).to.be.true;
-              expect(amount).to.equal(AMOUNT_PER_UNDERLYING);
+              expectToBeEqual(amount, AMOUNT_PER_UNDERLYING, threshold);
             }
           });
         });
@@ -500,6 +512,13 @@ describe('Comprehensive Transformer Test', () => {
         });
       }
     });
+  }
+
+  function expectToBeEqual(actual: BigNumberish, expected: BigNumberish, threshold?: BigNumberish) {
+    const expectedBN = BigNumber.from(expected);
+    expect(actual)
+      .to.be.gte(expectedBN.sub(threshold ?? 0))
+      .and.lte(expectedBN.add(threshold ?? 0));
   }
 
   async function wrap(token: string): Promise<IERC20Like> {

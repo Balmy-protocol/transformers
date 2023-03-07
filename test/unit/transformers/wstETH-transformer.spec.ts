@@ -11,6 +11,8 @@ import { BigNumber } from 'ethers';
 chai.use(smock.matchers);
 
 describe('wstETHTransformer', () => {
+  const TOTAL_SHARES = 456789;
+  const TOTAL_SUPPLY = 3333;
   const AMOUNT_DEPENDENT = 100000;
   const AMOUNT_UNDERLYING = 12345678;
 
@@ -31,6 +33,13 @@ describe('wstETHTransformer', () => {
 
   beforeEach(async () => {
     await snapshot.revert(snapshotId);
+    stETH.getTotalShares.returns(TOTAL_SHARES);
+    stETH.totalSupply.returns(TOTAL_SUPPLY);
+  });
+
+  afterEach(() => {
+    stETH.getTotalShares.reset();
+    stETH.totalSupply.reset();
   });
 
   describe('constructor', () => {
@@ -86,6 +95,48 @@ describe('wstETHTransformer', () => {
       });
       then('dependent amount is returned correctly', async () => {
         expect(amountDependent).to.equal(AMOUNT_DEPENDENT);
+      });
+    });
+  });
+
+  describe('calculateNeededToTransformToUnderlying', () => {
+    invalidUnderlyingInputTest({
+      func: 'calculateNeededToTransformToUnderlying',
+      input: (underlying) => [wstETH.address, underlying],
+    });
+    when('function is called', () => {
+      let neededDependent: BigNumber;
+      given(async () => {
+        neededDependent = await transformer.calculateNeededToTransformToUnderlying(wstETH.address, [
+          { underlying: stETH.address, amount: AMOUNT_UNDERLYING },
+        ]);
+      });
+      then('stETH is called correctly', () => {
+        expect(stETH.getTotalShares).to.have.been.calledOnce;
+        expect(stETH.totalSupply).to.have.been.calledOnce;
+      });
+      then('needed dependent is returned correctly', async () => {
+        const expected = BigNumber.from(AMOUNT_UNDERLYING).mul(TOTAL_SHARES).div(TOTAL_SUPPLY).add(1);
+        expect(neededDependent).to.equal(expected);
+      });
+    });
+  });
+
+  describe('calculateNeededToTransformToDependent', () => {
+    when('function is called', () => {
+      let neededUnderlying: ITransformer.UnderlyingAmountStructOutput[];
+      given(async () => {
+        neededUnderlying = await transformer.calculateNeededToTransformToDependent(wstETH.address, AMOUNT_DEPENDENT);
+      });
+      then('stETH is called correctly', () => {
+        expect(stETH.getTotalShares).to.have.been.calledOnce;
+        expect(stETH.totalSupply).to.have.been.calledOnce;
+      });
+      then('needed underlying is returned correctly', async () => {
+        const expected = BigNumber.from(AMOUNT_DEPENDENT).mul(TOTAL_SUPPLY).div(TOTAL_SHARES).add(1);
+        expect(neededUnderlying.length).to.equal(1);
+        expect(neededUnderlying[0].amount).to.equal(expected);
+        expect(neededUnderlying[0].underlying).to.equal(stETH.address);
       });
     });
   });

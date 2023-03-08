@@ -14,7 +14,7 @@ In this repository, we will build our `Transformers`. These are smart contract t
 
 Finally, this repository also contains Mean's "transformers registry". All _transformers_ will be registered to this contract, so that all clients can interact with the registry directly, without having to know all existing _transformers_.
 
-## Audits
+## 🔒 Audits
 
 Oracles has been audited by [Omniscia](https://omniscia.io/) and can be find [here](https://omniscia.io/reports/mean-finance-transformers-module/).
 

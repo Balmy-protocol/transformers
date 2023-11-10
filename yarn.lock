@@ -1152,10 +1152,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@mean-finance/deterministic-factory@1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@mean-finance/deterministic-factory/-/deterministic-factory-1.6.0.tgz#d1778d1b6d44de0695fe0defeb2dd3d4c1a2236e"
-  integrity sha512-Ympjbm+Pq8JwSGXNlknHkIn8sEiuNuG5ap6rh2Co9NQG6kljivdTvq2sm7uZGDHdmWGYnBBb4P590bxbG9XpQQ==
+"@mean-finance/deterministic-factory@1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@mean-finance/deterministic-factory/-/deterministic-factory-1.10.0.tgz#eaa270b8093de88723d4e410bcc26a7f1908d1c0"
+  integrity sha512-VifnRk8CnKlxcWSjzND2j9p79Tvo/yCJWEJdUI5SyP0RU57K3I2MCkEI9HL2nSQtGqi8ziF7ZtyPi3GA53vs/Q==
   dependencies:
     "@openzeppelin/contracts" "4.6.0"
     "@rari-capital/solmate" "6.2.0"

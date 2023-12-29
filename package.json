@@ -84,7 +84,7 @@
     "@codechecks/client": "0.1.12",
     "@commitlint/cli": "16.2.4",
     "@commitlint/config-conventional": "16.2.4",
-    "@defi-wonderland/smock": "2.2.0",
+    "@defi-wonderland/smock": "2.3.5",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13",
     "@nomiclabs/hardhat-etherscan": "3.0.3",
     "@nomiclabs/hardhat-waffle": "2.0.3",

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-pragma solidity >=0.8.7 <0.9.0;
+pragma solidity >=0.8.22 <0.9.0;
 
 import '@openzeppelin/contracts/utils/introspection/ERC165.sol';
 import '../../interfaces/ITransformer.sol';

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.8.7 <0.9.0;
+pragma solidity >=0.8.22 <0.9.0;
 
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
@@ -117,14 +117,14 @@ contract wstETHTransformer is BaseTransformer {
     // Since stETH contracts rounds down, we do the math here and round up
     uint256 _totalSuppy = stETH.totalSupply();
     uint256 _totalShares = stETH.getTotalShares();
-    _neededDependent = Math.mulDiv(_expectedUnderlying, _totalShares, _totalSuppy, Math.Rounding.Up);
+    _neededDependent = Math.mulDiv(_expectedUnderlying, _totalShares, _totalSuppy, Math.Rounding.Ceil);
   }
 
   function _calculateNeededToTransformToDependent(uint256 _expectedDependent) internal view returns (uint256 _neededUnderlying) {
     // Since stETH contracts rounds down, we do the math here and round up
     uint256 _totalShares = stETH.getTotalShares();
     uint256 _totalSuppy = stETH.totalSupply();
-    _neededUnderlying = Math.mulDiv(_expectedDependent, _totalSuppy, _totalShares, Math.Rounding.Up);
+    _neededUnderlying = Math.mulDiv(_expectedDependent, _totalSuppy, _totalShares, Math.Rounding.Ceil);
   }
 
   function _takewstETHFromSenderAndUnwrap(
@@ -143,7 +143,7 @@ contract wstETHTransformer is BaseTransformer {
     address _recipient
   ) internal returns (uint256 _dependentAmount) {
     stETH.safeTransferFrom(msg.sender, address(this), _amount);
-    stETH.approve(_dependent, _amount);
+    stETH.forceApprove(_dependent, _amount);
     _dependentAmount = IwstETH(_dependent).wrap(_amount);
     IwstETH(_dependent).safeTransfer(_recipient, _dependentAmount);
   }

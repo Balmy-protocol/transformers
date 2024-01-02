@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity >=0.8.22 <0.9.0;
+pragma solidity >=0.8.22;
 
 import '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 import '../../interfaces/ITransformer.sol';

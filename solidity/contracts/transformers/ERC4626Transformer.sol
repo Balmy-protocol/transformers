@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-pragma solidity >=0.8.7 <0.9.0;
+pragma solidity >=0.8.22;
 
 import '@openzeppelin/contracts/interfaces/IERC4626.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
@@ -84,7 +84,7 @@ contract ERC4626Transformer is BaseTransformer {
     uint256 _underlyingAmount = _underlying[0].amount;
     // We need to take the tokens from the sender, and approve them so that the vault can take it from us
     _underlyingToken.safeTransferFrom(msg.sender, address(this), _underlyingAmount);
-    _underlyingToken.approve(_dependent, _underlyingAmount);
+    _underlyingToken.forceApprove(_dependent, _underlyingAmount);
     _amountDependent = IERC4626(_dependent).deposit(_underlyingAmount, _recipient);
     if (_minAmountOut > _amountDependent) revert ReceivedLessThanExpected(_amountDependent);
   }
@@ -116,7 +116,7 @@ contract ERC4626Transformer is BaseTransformer {
     // Take the needed underlying tokens from the caller, and approve the vault
     IERC20 _underlying = IERC20(IERC4626(_dependent).asset());
     _underlying.safeTransferFrom(msg.sender, address(this), _neededUnderlying);
-    _underlying.approve(_dependent, _neededUnderlying);
+    _underlying.forceApprove(_dependent, _neededUnderlying);
     // Mint the vault tokens
     uint256 _spentUnderlying = IERC4626(_dependent).mint(_expectedDependent, _recipient);
     if (_maxAmountIn[0].amount < _spentUnderlying) revert NeededMoreThanExpected(_spentUnderlying);
@@ -125,7 +125,7 @@ contract ERC4626Transformer is BaseTransformer {
       unchecked {
         _underlying.safeTransfer(msg.sender, _neededUnderlying - _spentUnderlying);
       }
-      _underlying.approve(_dependent, 0);
+      _underlying.forceApprove(_dependent, 0);
     }
     return _toSingletonArray(address(_underlying), _spentUnderlying);
   }

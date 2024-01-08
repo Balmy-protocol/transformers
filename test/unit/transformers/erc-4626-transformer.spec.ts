@@ -47,6 +47,7 @@ describe('ERC4626Transformer', () => {
     underlyingToken.transfer.reset();
     underlyingToken.transferFrom.returns(true);
     underlyingToken.transfer.returns(true);
+    underlyingToken.approve.returns(true);
   });
 
   describe('getUnderlying', () => {

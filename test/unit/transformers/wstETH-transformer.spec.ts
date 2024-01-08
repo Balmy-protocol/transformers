@@ -40,6 +40,7 @@ describe('wstETHTransformer', () => {
     stETH.transfer.returns(true);
     wstETH.transferFrom.returns(true);
     wstETH.transfer.returns(true);
+    stETH.approve.returns(true);
   });
 
   afterEach(() => {

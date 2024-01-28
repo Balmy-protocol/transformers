@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.8.22;
 
-import '@openzeppelin/contracts/interfaces/IERC20.sol';
-import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts-5.0.1/interfaces/IERC20.sol';
+import '@openzeppelin/contracts-5.0.1/utils/math/Math.sol';
 import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for wstETH <=> stETH

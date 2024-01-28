@@ -2,9 +2,9 @@
 
 pragma solidity >=0.8.22;
 
-import '@openzeppelin/contracts/interfaces/IERC4626.sol';
-import '@openzeppelin/contracts/interfaces/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts-5.0.1/interfaces/IERC4626.sol';
+import '@openzeppelin/contracts-5.0.1/interfaces/IERC20.sol';
+import '@openzeppelin/contracts-5.0.1/token/ERC20/utils/SafeERC20.sol';
 import './BaseTransformer.sol';
 
 /// @title An implementaton of `ITransformer` for tokens that implement `ERC4626`

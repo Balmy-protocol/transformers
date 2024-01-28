@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.22;
 
-import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
+import '@openzeppelin/contracts-5.0.1/utils/introspection/ERC165Checker.sol';
 import './transformers/BaseTransformer.sol';
 import '../interfaces/ITransformerRegistry.sol';
 

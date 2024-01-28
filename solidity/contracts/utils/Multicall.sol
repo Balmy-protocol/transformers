@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.22;
 
-import '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts-5.0.1/utils/Address.sol';
 import '../../interfaces/utils/IMulticall.sol';
 
 /**

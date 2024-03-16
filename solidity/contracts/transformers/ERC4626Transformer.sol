@@ -11,8 +11,6 @@ import './BaseTransformer.sol';
 contract ERC4626Transformer is BaseTransformer {
   using SafeERC20 for IERC20;
 
-  constructor(address _governor) Governable(_governor) {}
-
   /// @inheritdoc ITransformer
   function getUnderlying(address _dependent) external view returns (address[] memory) {
     return _toSingletonArray(IERC4626(_dependent).asset());

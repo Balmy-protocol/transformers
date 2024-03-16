@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.8.22;
 
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
 import './BaseTransformer.sol';
@@ -13,7 +14,7 @@ contract wstETHTransformer is BaseTransformer {
   /// @notice The address of the stETH contract
   IstETH public immutable stETH;
 
-  constructor(IstETH _stETH, address _governor) Governable(_governor) {
+  constructor(IstETH _stETH) {
     stETH = _stETH;
   }
 

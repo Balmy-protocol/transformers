@@ -13,7 +13,7 @@ contract ProtocolTokenWrapperTransformer is BaseTransformer {
   using SafeERC20 for IWETH9;
   using Address for address payable;
 
-  constructor(address _governor) Governable(_governor) {}
+  address public constant PROTOCOL_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /// @inheritdoc ITransformer
   function getUnderlying(address) external pure returns (address[] memory) {

@@ -10,9 +10,6 @@ import {
   ITransformer__factory,
   IERC20__factory,
   IERC165__factory,
-  ICollectableDust__factory,
-  IMulticall__factory,
-  IGovernable__factory,
   TransformerRegistry,
 } from '@typechained';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
@@ -77,10 +74,12 @@ describe('Comprehensive Transformer Test', () => {
     dependent: 'WETH',
     underlying: ['ETH'],
     transformerDependencies: ['ProtocolTokenWrapperTransformer'],
-    setup: (registry, governor, [transformer]) =>
-      (registry as any as TransformerRegistry)
-        .connect(governor)
-        .registerTransformers([{ transformer: transformer.address, dependents: [TOKENS['WETH'].address] }]),
+    setup: async (transformer, [subTransformer]) => {
+      const registry = transformer as any as TransformerRegistry;
+      const governor = await wallet.impersonate(await registry.governor());
+      await ethers.provider.send('hardhat_setBalance', [governor._address, '0xffffffffffffffff']);
+      registry.connect(governor).registerTransformers([{ transformer: subTransformer.address, dependents: [TOKENS['WETH'].address] }]);
+    },
   });
 
   transformerComprehensiveTest({
@@ -105,12 +104,11 @@ describe('Comprehensive Transformer Test', () => {
     underlying: (keyof typeof TOKENS)[];
     transformerDependencies?: string[];
     threshold?: BigNumberish;
-    setup?: (transformer: BaseTransformer, governor: JsonRpcSigner, dependencies: BaseTransformer[]) => Promise<any>;
+    setup?: (transformer: BaseTransformer, dependencies: BaseTransformer[]) => Promise<any>;
   }) {
     contract(title ?? transformerName, () => {
       const INITIAL_SIGNER_BALANCE = utils.parseEther('10');
       const RECIPIENT = '0x00000000000000000000000000000000000000FF';
-      let governor: JsonRpcSigner;
       let dependent: IERC20Like, underlying: IERC20Like[];
       let transformer: BaseTransformer;
       let snapshotId: string, resetBalancesSnapshot: string;
@@ -125,15 +123,11 @@ describe('Comprehensive Transformer Test', () => {
         });
         transformer = await ethers.getContract<BaseTransformer>(transformerName);
 
-        // Set governor
-        governor = await wallet.impersonate(await transformer.governor());
-        await ethers.provider.send('hardhat_setBalance', [governor._address, '0xffffffffffffffff']);
-
         // Set up transformer
         const dependencies = await Promise.all(
           transformerDependencies?.map((transformerName) => ethers.getContract<BaseTransformer>(transformerName)) ?? []
         );
-        await setup?.(transformer, governor, dependencies);
+        await setup?.(transformer, dependencies);
 
         // Take snapshot
         resetBalancesSnapshot = await snapshot.take();
@@ -393,62 +387,6 @@ describe('Comprehensive Transformer Test', () => {
           });
         });
       });
-      describe('sendDust', () => {
-        const RECIPIENT = wallet.generateRandomAddress();
-        when('sending protocol token dust', () => {
-          const INITIAL_DUST_BALANCE = utils.parseEther('1');
-          const DUST_TO_COLLECT = utils.parseEther('0.1');
-          given(async () => {
-            const balanceHex = utils.hexStripZeros(INITIAL_DUST_BALANCE.toHexString());
-            await ethers.provider.send('hardhat_setBalance', [transformer.address, balanceHex]);
-            await transformer.connect(governor).sendDust(await transformer.PROTOCOL_TOKEN(), DUST_TO_COLLECT, RECIPIENT);
-          });
-          then('protocol token is collected from contract', async () => {
-            expect(await ethers.provider.getBalance(transformer.address)).to.equal(INITIAL_DUST_BALANCE.sub(DUST_TO_COLLECT));
-          });
-          then('protocol token is sent to recipient', async () => {
-            expect(await ethers.provider.getBalance(RECIPIENT)).to.equal(DUST_TO_COLLECT);
-          });
-        });
-        context('sending erc20 dust', () => {
-          const INITIAL_DUST_BALANCE = utils.parseEther('1');
-          const DUST_TO_COLLECT = utils.parseEther('0.1');
-          given(async () => {
-            await dependent.connect(signer).transfer(transformer.address, INITIAL_DUST_BALANCE);
-            await transformer.connect(governor).sendDust(dependent.address, DUST_TO_COLLECT, RECIPIENT);
-          });
-          then('erc20 is collected from contract', async () => {
-            expect(await dependent.balanceOf(transformer.address)).to.equal(INITIAL_DUST_BALANCE.sub(DUST_TO_COLLECT));
-          });
-          then('erc20 is sent to recipient', async () => {
-            expect(await dependent.balanceOf(RECIPIENT)).to.equal(DUST_TO_COLLECT);
-          });
-        });
-      });
-      describe('multicall', () => {
-        when('asking calculating transform using multicall', () => {
-          const AMOUNT_PER_UNDERLYING = utils.parseEther('1');
-          let returnedDependent1: BigNumber, returnedDependent2: BigNumber;
-          given(async () => {
-            const input = underlying.map((underlying) => ({ underlying: underlying.address, amount: AMOUNT_PER_UNDERLYING }));
-            const { data } = await transformer.populateTransaction.calculateTransformToDependent(dependent.address, input);
-            const [result1, result2] = await transformer.callStatic.multicall([data!, data!]);
-            returnedDependent1 = BigNumber.from(result1);
-            returnedDependent2 = BigNumber.from(result2);
-          });
-          then('both returned values are the same', async () => {
-            expect(returnedDependent1).to.equal(returnedDependent2);
-          });
-          then('transforming back to underlying returns the same value', async () => {
-            const returnedUnderlying = await transformer.calculateTransformToUnderlying(dependent.address, returnedDependent1);
-            expect(returnedUnderlying.length).to.equal(underlying.length);
-            for (const { underlying: underlyingToken, amount } of returnedUnderlying) {
-              expect(isTokenUnderyling(underlyingToken)).to.be.true;
-              expectToBeEqual(amount, AMOUNT_PER_UNDERLYING, threshold);
-            }
-          });
-        });
-      });
       describe('supportsInterface', () => {
         isInterfaceSupportedTest({
           name: 'IERC165',
@@ -458,21 +396,6 @@ describe('Comprehensive Transformer Test', () => {
         isInterfaceSupportedTest({
           name: 'ITransformer',
           interface_: ITransformer__factory.createInterface(),
-          expected: true,
-        });
-        isInterfaceSupportedTest({
-          name: 'ICollectableDust',
-          interface_: ICollectableDust__factory.createInterface(),
-          expected: true,
-        });
-        isInterfaceSupportedTest({
-          name: 'IMulticall',
-          interface_: IMulticall__factory.createInterface(),
-          expected: true,
-        });
-        isInterfaceSupportedTest({
-          name: 'IGovernable',
-          interface_: IGovernable__factory.createInterface(),
           expected: true,
         });
         isInterfaceSupportedTest({

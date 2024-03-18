@@ -29,7 +29,7 @@ describe('ERC4626Transformer', () => {
     const factory: ERC4626Transformer__factory = await ethers.getContractFactory(
       'solidity/contracts/transformers/ERC4626Transformer.sol:ERC4626Transformer'
     );
-    transformer = await factory.deploy(signer.address);
+    transformer = await factory.deploy();
     snapshotId = await snapshot.take();
   });
 

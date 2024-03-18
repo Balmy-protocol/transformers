@@ -33,7 +33,7 @@ describe('ProtocolTokenWrapperTransformer', () => {
     const factory: ProtocolTokenWrapperTransformer__factory = await ethers.getContractFactory(
       'solidity/contracts/transformers/ProtocolTokenWrapperTransformer.sol:ProtocolTokenWrapperTransformer'
     );
-    transformer = await factory.deploy(signer.address);
+    transformer = await factory.deploy();
     snapshotId = await snapshot.take();
   });
 

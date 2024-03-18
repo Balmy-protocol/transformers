@@ -4,7 +4,7 @@ import { deployThroughDeterministicFactory } from '@mean-finance/deterministic-f
 import { DeployFunction } from '@0xged/hardhat-deploy/dist/types';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer, msig } = await hre.getNamedAccounts();
+  const { deployer } = await hre.getNamedAccounts();
 
   let stETH: string | undefined;
   switch (hre.deployments.getNetworkName().toLowerCase()) {
@@ -22,8 +22,8 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     contract: 'solidity/contracts/transformers/wstETHTransformer.sol:wstETHTransformer',
     bytecode,
     constructorArgs: {
-      types: ['address', 'address'],
-      values: [stETH, msig],
+      types: ['address'],
+      values: [stETH],
     },
     log: !process.env.TEST,
     overrides: !!process.env.COVERAGE

@@ -28,7 +28,7 @@ describe('wstETHTransformer', () => {
     wstETH = await smock.fake('IwstETH');
     stETH = await smock.fake('IstETH');
     const factory: WstETHTransformer__factory = await ethers.getContractFactory('wstETHTransformer');
-    transformer = await factory.deploy(stETH.address, signer.address);
+    transformer = await factory.deploy(stETH.address);
     snapshotId = await snapshot.take();
   });
 

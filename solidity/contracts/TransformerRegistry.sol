@@ -3,10 +3,16 @@
 pragma solidity >=0.8.22;
 
 import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
+import './utils/Multicall.sol';
+import './utils/Governable.sol';
 import './transformers/BaseTransformer.sol';
 import '../interfaces/ITransformerRegistry.sol';
 
-contract TransformerRegistry is BaseTransformer, ITransformerRegistry {
+contract TransformerRegistry is BaseTransformer, Governable, Multicall, ITransformerRegistry {
+  address public constant PROTOCOL_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
   mapping(address => ITransformer) internal _registeredTransformer; // dependent => transformer
 
   constructor(address _governor) Governable(_governor) {}
